@@ -8,6 +8,9 @@ import Home from './pages/Home';
 import Contributor from './pages/Contributor';
 import Requester from './pages/Requester';
 import MyRequests from './pages/MyRequests';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import TeamMembers from './pages/Team'
 
 const App = () => {
   return (
@@ -19,6 +22,9 @@ const App = () => {
         <Route path="/requester" element={<UserProtectWrapper><Requester /></UserProtectWrapper>} />
         <Route path="/my-requests" element={<UserProtectWrapper><MyRequests /></UserProtectWrapper>} />
         <Route path="/contributor" element={<UserProtectWrapper><Contributor /></UserProtectWrapper>} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/meet-team" element={<TeamMembers />} />
       </Routes>
     // </AnimatePresence>
   )
