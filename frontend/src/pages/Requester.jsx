@@ -8,10 +8,7 @@ import ImageClassificationForm from "../components/ModelForms/imageClassificatio
 
 const modelTypes = [
   "Image Classification",
-  "Object Detection",
-  "Text-to-Speech",
   "Sentiment Analysis",
-  "Pose Estimation",
 ]
 
 export default function RequesterPage() {

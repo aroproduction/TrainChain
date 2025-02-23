@@ -18,7 +18,8 @@ export default function MyRequests() {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/jobs/my-requests?requesterAddress=${localStorage.getItem("userAddress")}`,
       )
-      setRequests(response.data)
+      const fetchedData = Array.isArray(response.data) ? response.data : []
+      setRequests(fetchedData)
       setIsLoading(false)
     }
 
