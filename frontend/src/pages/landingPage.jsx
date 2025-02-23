@@ -318,7 +318,7 @@ function FeaturesSection() {
         Features
       </motion.h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {['Secure Transactions', 'Decentralized Network', 'AI Model Training', 'Secure Transactions', 'Decentralized Network'].map(
+        {['Secure Transactions', 'Decentralized Network', 'AI Model Training', 'IPFS for Data Storage', 'Token-Based Incentives','Intuitive User Interface'].map(
           (feature, index) => (
             <motion.div
               key={index}
