@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask Login</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.1.1/web3.min.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <h2>MetaMask Authentication</h2>
+    <button id="connectBtn">Connect to MetaMask</button>
+    <p id="status"></p>
+
+    <script>
+        async function connectMetaMask() {
+            if (window.ethereum) {
+                try {
+                    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+                    const walletAddress = accounts[0];
+                    
+                    // Send wallet address to Flask backend
+                    fetch("http://127.0.0.1:5000/authenticate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ wallet: walletAddress })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            document.getElementById("status").innerText = "Authenticated successfully!";
+                            setTimeout(() => window.close(), 2000);
+                        }
+                    });
+
+                } catch (error) {
+                    document.getElementById("status").innerText = "User denied access!";
+                }
+            } else {
+                document.getElementById("status").innerText = "MetaMask not installed!";
+            }
+        }
+
+        document.getElementById("connectBtn").addEventListener("click", connectMetaMask);
+    </script>
+</body>
+</html>
