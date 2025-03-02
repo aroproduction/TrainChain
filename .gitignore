@@ -34,4 +34,3 @@ coverage/
 
 #Ignore the dev container files
 .devcontainer/
-.github
