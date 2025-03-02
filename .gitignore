@@ -34,3 +34,6 @@ coverage/
 
 #Ignore the dev container files
 .devcontainer/
+
+#Ignore the python virtual environment
+.venv/

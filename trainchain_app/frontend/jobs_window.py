@@ -90,7 +90,7 @@ class JobsPage(QMainWindow):
     def fetch_job_details(self):
         """Send a GET request to the backend to fetch job details"""
         try:
-            response = requests.get(f"http://localhost:4000/jobs/contributor/get-job?contributorAddress={self.wallet_address}")
+            response = requests.get(f"https://trainchain.onrender.com/jobs/contributor/get-job?contributorAddress={self.wallet_address}")
             print("response", response.json())
             
             if response.status_code == 200:
@@ -134,7 +134,7 @@ class JobsPage(QMainWindow):
             ["docker", "pull", f"aroproduction/trainchain:{docker_tag}"],
             ["docker", "run", "--gpus", "all", "--shm-size=4g", "--memory=5g", 
              "-e", f"JOB_ID={self.job_id}", 
-             "-e", "API_URL=http://host.docker.internal:4000", 
+             "-e", "API_URL=https://trainchain.onrender.com", 
              f"aroproduction/trainchain:{docker_tag}"]
         ]
 
