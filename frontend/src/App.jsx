@@ -10,11 +10,13 @@ import Requester from './pages/Requester';
 import MyRequests from './pages/MyRequests';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import TeamMembers from './pages/Team'
+import TeamMembers from './pages/Team';
+import Cursor_layout from './Layout/cursor';
 
 const App = () => {
   return (
-    // <AnimatePresence mode="wait">
+    <>
+      <Cursor_layout />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
@@ -26,7 +28,7 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/meet-team" element={<TeamMembers />} />
       </Routes>
-    // </AnimatePresence>
+    </>
   )
 }
 

@@ -115,9 +115,12 @@ export default function ImageClassificationForm() {
       return;
     }
 
-    setIsLoading(true);
+    if (reward < 2) {
+      alert("Minimum reward value is 2 POL.");
+      return;
+    }
 
-    console.log("files:", files.length);
+    setIsLoading(true);
 
     if (
       !model ||

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@darenft/react-3d-hover-card": "^1.0.9",
+    "@gsap/react": "^2.1.2",
     "@react-three/drei": "^9.121.4",
     "@react-three/fiber": "^8.17.14",
     "axios": "^1.7.9",

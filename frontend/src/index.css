@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    cursor: none !important;
+}
+
+/* Ensure cursor is also hidden on interactive elements */
+button, a, input, div, [data-cursor='pointer'] {
+    cursor: none !important; /* Prevents default hand pointer */
+}
+
+body {
+    min-height: 100vh;
+    min-width: 100%;
+}

@@ -1,0 +1,26 @@
+#cursor {
+    height: 15px;
+    width: 15px;
+    background-color: lightblue;
+    border-radius: 50%;
+    box-shadow: 0 0 8px lawngreen;
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* New styling for #cursor_ */
+#cursor_ {
+    position: fixed;
+    z-index: 200; /* ensures this cursor is above #cursor */
+    pointer-events: none; /* ensures this cursor does not interfere with pointer events */
+}
+
+/* Update styling for cursor_ img */
+#cursor_ img {
+    height: 25px;
+    width: 25px;
+    filter: drop-shadow(0 0 5px cyan);
+    pointer-events: none;
+    transition: transform 0.2s ease-out;
+}
