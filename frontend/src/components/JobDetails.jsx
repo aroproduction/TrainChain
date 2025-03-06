@@ -47,13 +47,13 @@ export default function JobDetails({ selectedJob, onBack }) {
       exit={{ opacity: 0, y: 50 }}
       className="flex flex-col items-center py-16 px-4 sm:px-8 md:px-12 lg:px-20 bg-transparent relative"
     >
-      {/* Back Button */}
+      {/* Back Button
       <button
         onClick={onBack}
         className="absolute top-4 left-4 flex items-center text-gray-700 hover:text-black transition text-sm sm:text-base"
       >
         <ArrowLeft size={20} className="mr-1 sm:mr-2" /> Back
-      </button>
+      </button> */}
 
       {/* Job Details Card */}
       <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 max-w-lg sm:max-w-2xl w-full text-center border border-gray-200">
