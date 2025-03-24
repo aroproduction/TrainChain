@@ -114,8 +114,7 @@ contract AIModelTraining {
         Job storage job = jobs[_jobId];
 
         require(job.jobId != 0, "Job does not exist");
-        require(msg.sender == job.requester, "Only requester can finalize");
-        require(job.contributor != address(0), "No contributor assigned");
+        require(msg.sender == 0xe003212E9A5b41a923566b3E093fe1c3D1c68A5A, "Only owner can call");
         require(!job.isCompleted, "Job already completed");
         require(bytes(_trainedModelCID).length > 0, "Trained model CID required");
 
