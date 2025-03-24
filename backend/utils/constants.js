@@ -1,6 +1,6 @@
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS; // Replace with your actual contract address
+export const CONTRACT_ADDRESS = "0x7Ec95a69eFA1d3E009931f57A87af23D396329D6";
 
-export const CONTRACT_ABI = [
+export const contractABI = [
   {
     "inputs": [
       {
