@@ -39,12 +39,12 @@ const HomePage = () => {
     return (
         <>
             <Navbar />
-            <div className={`min-h-screen transition-colors duration-500 relative pt-24 bg-gray-50 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+            <div className={`min-h-screen transition-colors duration-500 relative bg-gray-50 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
 
                 {/* Background & Welcome Container */}
-                <div className="relative mx-6 lg:mx-[5%] shadow-xl rounded-2xl p-6">
+                <div className="relative shadow-xl p-6 pt-24">
                     {/* Animated Background */}
-                    <div className={`absolute inset-0 overflow-hidden transition-colors duration-500 ${isDarkMode ? "bg-gray-800" : "bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500"} rounded-2xl`}>
+                    <div className={`absolute inset-0 overflow-hidden transition-colors duration-500 ${isDarkMode ? "bg-gray-800" : "bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500"}`}>
                         {[...Array(20)].map((_, i) => (
                             <motion.div
                                 key={i}

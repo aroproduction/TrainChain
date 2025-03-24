@@ -13,7 +13,7 @@ html, body, #root {
 }
 
 /* Ensure cursor is also hidden on interactive elements */
-button, a, input, div, [data-cursor='pointer'] {
+button, a, input, div, label, [data-cursor='pointer'] {
     cursor: none !important; /* Prevents default hand pointer */
 }
 

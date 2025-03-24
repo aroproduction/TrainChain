@@ -415,6 +415,16 @@ function JobCard({ job, onClick }) {
     setIsHovering(false);
   };
 
+  // Format date and time helper function
+  const formatDateTime = (timestamp) => {
+    if (!timestamp) return "Unknown date";
+    const date = new Date(timestamp);
+    return `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })}(UST)`;
+  };
+
   return (
     <motion.div
       variants={{
@@ -455,7 +465,6 @@ function JobCard({ job, onClick }) {
       <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/50 backdrop-blur-sm border border-white/20 shadow-xl rounded-2xl transition-all duration-300 group-hover:shadow-2xl"></div>
 
       <div className="relative p-6 h-full flex flex-col">
-        {/* ...existing code... */}
         <div className="flex justify-between items-center mb-6">
           <span className={`flex items-center gap-1 px-3 py-1 text-white rounded-lg ${statusColors[job.status]}`}>
             {statusIcons[job.status]} {job.status.replace("_", " ")}
@@ -474,11 +483,12 @@ function JobCard({ job, onClick }) {
         </div>
         <div className="mt-auto">
           <div className="flex items-center justify-between"></div>
-          <div className="flex items-center gap-1"></div>
-          <Clock size={14} className="text-gray-500" />
-          <span className="text-xs text-gray-500">
-            {job.created_at ? new Date(job.created_at).toLocaleDateString() : "Unknown date"}
-          </span>
+          <div className="flex items-center gap-1">
+            <Clock size={14} className="text-gray-500" />
+            <span className="text-xs text-gray-500">
+              {formatDateTime(job.created_at)}
+            </span>
+          </div>
         </div>
         <div className="flex justify-end">
         <motion.div

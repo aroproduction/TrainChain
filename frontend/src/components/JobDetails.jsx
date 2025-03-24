@@ -12,7 +12,22 @@ export default function JobDetails({ selectedJob, onBack }) {
 
   const ApplyJobHandler = async () => {
     try {
-      // Add loading state if needed
+
+      try {
+        // Call the smart contract
+        const tx = await acceptJob(selectedJob.id);
+
+        // Wait for confirmation
+        const receipt = await tx.wait();
+
+        if (receipt.status !== 1) {
+          throw new Error("Transaction failed");
+        }
+      } catch (error) {
+        console.error("Error accepting job in blockchain:", error);
+        alert(error.message || "Failed to accept job. Please try again.");
+      }
+
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/jobs/contributor/apply`, {
         jobId: selectedJob.id,
         contributorAddress: userAddress,
@@ -22,20 +37,10 @@ export default function JobDetails({ selectedJob, onBack }) {
         throw new Error(response.data.message || "Job application failed due to validation.");
       }
 
-      // Call the smart contract
-      const tx = await acceptJob(selectedJob.id);
-      
-      // Wait for confirmation
-      const receipt = await tx.wait();
-      
-      if (receipt.status === 1) {
-        alert("Job accepted successfully!");
-      } else {
-        throw new Error("Transaction failed");
-      }
+      alert("Job application successful!");
 
     } catch (error) {
-      console.error("Error accepting job:", error);
+      console.error("Error accepting job in backend:", error);
       alert(error.message || "Failed to accept job. Please try again.");
     }
   };

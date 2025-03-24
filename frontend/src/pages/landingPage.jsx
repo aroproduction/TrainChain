@@ -286,7 +286,7 @@ function FloatingElement({ children, delay = 0, duration = 4, yOffset = 15 }) {
 /** HERO SECTION **/
 function HeroSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: false, amount: 0 })
+  const isInView = useInView(ref, { once: false, amount: 0.3 })
 
   return (
     <section
@@ -301,7 +301,7 @@ function HeroSection() {
         className="relative z-10 text-center px-4"
         initial={{ opacity: 0, y: 50 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
       >
         <AnimatedText />
 
@@ -309,7 +309,7 @@ function HeroSection() {
           className={`mb-10 text-lg md:text-xl text-gray-700 max-w-3xl mx-auto`}
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
         >
           Train AI models through decentralized computation and blockchain technology.
           <br />
@@ -319,7 +319,7 @@ function HeroSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -365,7 +365,7 @@ function HeroSection() {
 /** FEATURES SECTION **/
 function FeaturesSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: false, amount: 0 })
+  const isInView = useInView(ref, { once: false, amount: 0.2 })
 
   const features = [
     {
@@ -502,19 +502,19 @@ function FeaturesSection() {
         className="relative z-10 w-full max-w-7xl mx-auto"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
       >
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           <motion.div
             className="inline-block px-4 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-sm mb-4"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             Revolutionary Technology
           </motion.div>
@@ -555,7 +555,7 @@ function FeaturesSection() {
 function AboutSection() {
   const [activeIndex, setActiveIndex] = useState(null)
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: false, amount: 0 })
+  const isInView = useInView(ref, { once: false, amount: 0.2 })
 
   const faqItems = [
     {
@@ -597,19 +597,19 @@ function AboutSection() {
         className="relative z-10 w-full max-w-4xl mx-auto"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
       >
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           <motion.div
             className="inline-block px-4 py-1 rounded-full bg-orange-100 text-orange-800 font-medium text-sm mb-4"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             Common Questions
           </motion.div>
@@ -680,7 +680,7 @@ function AboutSection() {
 
 function TestimonialSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: false, amount: 0 })
+  const isInView = useInView(ref, { once: false, amount: 0.2 })
 
   const testimonials = [
     {
@@ -722,19 +722,19 @@ function TestimonialSection() {
         className="relative z-10 w-full max-w-6xl mx-auto"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
       >
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           <motion.div
             className="inline-block px-4 py-1 rounded-full bg-purple-100 text-purple-800 font-medium text-sm mb-4"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             Success Stories
           </motion.div>
@@ -751,7 +751,7 @@ function TestimonialSection() {
               className="bg-white p-8 rounded-xl shadow-lg border border-gray-100"
               initial={{ opacity: 0, y: 50 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-              transition={{ duration: 0.5, delay: 0.1 * index }}
+              transition={{ duration: 0.5, delay: 0.2 * index }}
               whileHover={{
                 y: -10,
                 boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -793,7 +793,7 @@ function TestimonialSection() {
 /** CONTACT SECTION **/
 function ContactSection() {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: false, amount: 0 })
+  const isInView = useInView(ref, { once: false, amount: 0.2 })
 
   const stats = [
     { number: "10K+", label: "GPUs Connected", icon: "💻" },
@@ -814,19 +814,19 @@ function ContactSection() {
         className="relative z-10 w-full max-w-6xl mx-auto"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
       >
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           <motion.div
             className="inline-block px-4 py-1 rounded-full bg-red-100 text-red-800 font-medium text-sm mb-4"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             Global Impact
           </motion.div>
@@ -848,7 +848,7 @@ function ContactSection() {
                 <motion.div
                   className="text-5xl mb-4"
                   animate={{ y: [0, -15, 0] }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: index * 0.2 }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: index * 0.5 }}
                 >
                   {stat.icon}
                 </motion.div>
@@ -858,8 +858,8 @@ function ContactSection() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: false }}
                   transition={{
-                    duration: 0.5,
-                    delay: index * 0.1,
+                    duration: 0.8,
+                    delay: 0.2 + index * 0.1,
                     type: "spring",
                   }}
                 >
@@ -875,7 +875,7 @@ function ContactSection() {
           className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-10 text-white text-center shadow-xl"
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
         >
           <h3 className="text-3xl font-bold mb-4">Ready to Join the Revolution?</h3>
           <p className="text-xl mb-8 max-w-3xl mx-auto">
@@ -885,7 +885,7 @@ function ContactSection() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
