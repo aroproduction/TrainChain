@@ -2,7 +2,8 @@
 import sys
 import requests
 import subprocess
-from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QApplication, QPushButton, QProgressBar
+from PyQt6.QtWidgets import (QMainWindow, QLabel, QVBoxLayout, QWidget, QApplication, 
+                            QPushButton, QProgressBar, QRadioButton, QGroupBox, QHBoxLayout)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont
 import threading
@@ -16,6 +17,7 @@ class JobsPage(QMainWindow):
         self.setMinimumSize(500, 300)
         self.job_id = None
         self.job_type = None
+        self.use_gpu = True  # Default to GPU
 
         # Main widget and layout with professional spacing
         container = QWidget()
@@ -29,6 +31,23 @@ class JobsPage(QMainWindow):
         self.label.setWordWrap(True)
         self.label.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.layout.addWidget(self.label)
+
+        # Hardware selection section
+        self.hardware_group = QGroupBox("Select Hardware")
+        self.hardware_group.setFont(QFont("Helvetica", 11))
+        hardware_layout = QVBoxLayout()
+        
+        # Radio buttons for CPU/GPU selection
+        self.gpu_radio = QRadioButton("GPU (faster training)")
+        self.cpu_radio = QRadioButton("CPU (compatible with all machines)")
+        self.gpu_radio.setChecked(True)  # Default to GPU
+        self.gpu_radio.toggled.connect(self.on_hardware_selected)
+        
+        hardware_layout.addWidget(self.gpu_radio)
+        hardware_layout.addWidget(self.cpu_radio)
+        self.hardware_group.setLayout(hardware_layout)
+        self.hardware_group.setVisible(False)  # Initially hidden until job is fetched
+        self.layout.addWidget(self.hardware_group)
 
         # Start Training button (initially hidden)
         self.start_button = QPushButton("Start Training", self)
@@ -83,9 +102,24 @@ class JobsPage(QMainWindow):
                 background-color: #FFFFFF;
                 height: 20px;
             }
+            QGroupBox {
+                background-color: #FFFFFF;
+                border: 1px solid #D1D9E6;
+                border-radius: 4px;
+                padding: 15px;
+                margin-top: 15px;
+            }
+            QRadioButton {
+                color: #1A3C5A;
+                padding: 5px;
+            }
         """)
 
         self.fetch_job_details()
+    
+    def on_hardware_selected(self):
+        """Handle hardware selection change"""
+        self.use_gpu = self.gpu_radio.isChecked()
 
     def fetch_job_details(self):
         """Send a GET request to the backend to fetch job details"""
@@ -106,50 +140,77 @@ class JobsPage(QMainWindow):
                         f"Description: {job_description}\n"
                         f"Reward: {reward} ETH"
                     )
+                    self.hardware_group.setVisible(True)  # Show hardware selection
                     self.start_button.setVisible(True)  # Show button if job is available
                 else:
                     self.label.setText(f"Wallet: {self.wallet_address}\nCurrently no jobs are available.")
                     self.start_button.setVisible(False)
+                    self.hardware_group.setVisible(False)
             elif response.status_code == 201:
                 self.label.setText(f"Wallet: {self.wallet_address}\nCurrently no jobs are available.")
                 self.start_button.setVisible(False)
+                self.hardware_group.setVisible(False)
             else:
                 self.label.setText(f"Error fetching job details. Status: {response.status_code}")
                 self.start_button.setVisible(False)
+                self.hardware_group.setVisible(False)
         except requests.RequestException as e:
             self.label.setText(f"Request failed: {str(e)}")
             self.start_button.setVisible(False)
+            self.hardware_group.setVisible(False)
 
     def start_training(self):
-        """Run Docker commands for training based on job details"""
+        """Run Docker commands for training based on job details and hardware selection"""
         self.start_button.setEnabled(False)  # Disable button during training
         self.loader.setVisible(True)  # Show loader
         self.warning_label.setVisible(True)  # Show warning
+        self.hardware_group.setEnabled(False)  # Disable hardware selection during training
 
         # Determine Docker image tag based on job_type
         docker_tag = "yolo-training" if self.job_type == "image_processing" else "default-training"
 
+        # Base docker run command
+        docker_run_cmd = ["docker", "run"]
+        
+        # Add GPU flags only if GPU is selected
+        if self.use_gpu:
+            docker_run_cmd.extend(["--gpus", "all"])
+        
+        # Add common parameters
+        docker_run_cmd.extend([
+            "--shm-size=4g", 
+            "--memory=5g", 
+            "-e", f"JOB_ID={self.job_id}", 
+            "-e", "API_URL=https://trainchain.onrender.com",
+            f"aroproduction/trainchain:{docker_tag}"
+        ])
+
         # Docker commands
         commands = [
             ["docker", "pull", f"aroproduction/trainchain:{docker_tag}"],
-            ["docker", "run", "--gpus", "all", "--shm-size=4g", "--memory=5g", 
-             "-e", f"JOB_ID={self.job_id}", 
-             "-e", "API_URL=https://trainchain.onrender.com", 
-             f"aroproduction/trainchain:{docker_tag}"]
+            docker_run_cmd
         ]
 
         def run_docker():
             try:
+                hardware_type = "GPU" if self.use_gpu else "CPU"
+                self.label.setText(f"Wallet: {self.wallet_address}\nStarting training for Job ID: {self.job_id} using {hardware_type}...")
+                
                 for cmd in commands:
-                    subprocess.run(cmd, check=True)
+                    process = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                    print(f"Command output: {process.stdout}")
+                
                 self.label.setText(f"Wallet: {self.wallet_address}\nTraining completed for Job ID: {self.job_id}")
             except subprocess.CalledProcessError as e:
-                self.label.setText(f"Error running Docker: {str(e)}")
+                error_msg = f"Error running Docker: {str(e)}\n{e.stdout if hasattr(e, 'stdout') else ''}\n{e.stderr if hasattr(e, 'stderr') else ''}"
+                print(error_msg)
+                self.label.setText(error_msg)
             finally:
                 self.loader.setVisible(False)
                 self.warning_label.setVisible(False)
                 self.start_button.setEnabled(True)
                 self.start_button.setVisible(False)  # Hide button after completion
+                self.hardware_group.setEnabled(True)  # Re-enable hardware selection
 
         # Run Docker commands in a separate thread to keep UI responsive
         threading.Thread(target=run_docker, daemon=True).start()
