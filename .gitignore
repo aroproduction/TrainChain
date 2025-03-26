@@ -9,7 +9,6 @@ build/
 
 # Ignore environment variable files
 .env
-.env.local
 
 # Ignore OS generated files
 .DS_Store
