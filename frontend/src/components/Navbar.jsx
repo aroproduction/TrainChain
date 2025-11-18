@@ -34,7 +34,7 @@ function Navbar() {
                 <Link to="/home" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Home</Link>
                 <Link to="/about" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">About</Link>
                 <Link to="/contact" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Contact</Link>
-                {/* <Link to="/meet-team" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Team</Link> */}
+                <Link to="/meet-team" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Team</Link>
             </div>
             {!userAddress && <Link to="/home" className="hidden md:block px-6 py-2 bg-blue-500 text-white rounded-md font-semibold shadow-md hover:bg-blue-600">Login</Link>}
             {userAddress && <button onClick={logoutHandler} className="hidden md:block px-6 py-2 bg-red-500 text-white rounded-md font-semibold shadow-md hover:bg-red-600">Logout</button>}
