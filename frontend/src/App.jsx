@@ -26,7 +26,7 @@ const App = () => {
         <Route path="/contributor" element={<UserProtectWrapper><Contributor /></UserProtectWrapper>} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/meet-team" element={<TeamMembers />} />
+        {/* <Route path="/meet-team" element={<TeamMembers />} /> */}
       </Routes>
     </>
   )
