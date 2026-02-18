@@ -168,7 +168,7 @@ export default function ContributorJobs() {
                       GPU.
                     </p>
                     <motion.a
-                      href="https://github.com/aroproduction/TrainChain/blob/v1/trainchain_app/frontend/dist/main.exe"
+                      href="https://github.com/aroproduction/TrainChain/releases/download/v1.2/TrainChain-Setup.exe"
                       download
                       target="_blank"
                       rel="noopener noreferrer"
