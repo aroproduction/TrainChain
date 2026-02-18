@@ -65,6 +65,9 @@ added_datas = [
     # Flask web assets
     (str(_here / "web" / "templates"), "web/templates"),
     (str(_here / "web" / "static"),    "web/static"),
+
+    # App icon bundled so PyQt6 can load it at runtime
+    (str(_here / "assets" / "icon.png"), "assets"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -130,7 +133,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon="assets/icon.ico",  # Uncomment and point to your .ico file
+    icon=str(_here / "assets" / "icon.ico"),
 )
 
 # ---------------------------------------------------------------------------

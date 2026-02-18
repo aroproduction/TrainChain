@@ -4,6 +4,20 @@ import os
 import threading
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QIcon
+
+
+def _resource_path(relative: str) -> str:
+    """
+    Return the absolute path to a bundled resource.
+    Works both in development (relative to this file's parent)
+    and in a PyInstaller-frozen build (relative to sys._MEIPASS).
+    """
+    if getattr(sys, "frozen", False):
+        base = Path(sys._MEIPASS)          # type: ignore[attr-defined]
+    else:
+        base = Path(__file__).resolve().parent.parent   # trainchain_app/
+    return str(base / relative)
 
 # Add project root to sys.path (works for both dev and packaged app)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -24,6 +38,7 @@ def start_flask():
 if __name__ == "__main__":
     start_flask()
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(_resource_path("assets/icon.png")))
 
     def _launch_main_ui():
         """Show login or jobs page depending on stored session."""
