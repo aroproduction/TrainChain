@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidg
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from .jobs_window import JobsPage
+from .session import save_session
 
 class LoginWindow(QMainWindow):
     def __init__(self):
@@ -86,6 +87,7 @@ class LoginWindow(QMainWindow):
 
     def open_jobs_page(self, wallet_address):
         """Opens Jobs Page after successful login"""
+        save_session(wallet_address)
         self.jobs_window = JobsPage(wallet_address)
         self.jobs_window.show()
         self.close()

@@ -1,23 +1,35 @@
-altgraph==0.17.4
-blinker==1.9.0
-certifi==2025.1.31
-charset-normalizer==3.4.1
-click==8.1.8
-colorama==0.4.6
+# TrainChain contributor app — Python dependencies
+# Install with:  pip install -r requirements.txt
+# (This covers the PyQt6 GUI + Flask auth server only.
+#  ML training dependencies — torch, ultralytics, etc. — are installed
+#  automatically into .trainchain_env/ by uv on first launch.)
+
 Flask==3.1.0
-idna==3.10
-itsdangerous==2.2.0
+Werkzeug==3.1.3
 Jinja2==3.1.5
 MarkupSafe==3.0.2
-packaging==24.2
-pefile==2023.2.7
-pyinstaller==6.12.0
-pyinstaller-hooks-contrib==2025.1
+itsdangerous==2.2.0
+click==8.1.8
+blinker==1.9.0
+
 PyQt6==6.8.1
 PyQt6-Qt6==6.8.2
 PyQt6_sip==13.10.0
-pywin32-ctypes==0.2.3
+
 requests==2.32.3
-setuptools==75.8.2
 urllib3==2.3.0
-Werkzeug==3.1.3
+certifi==2025.1.31
+charset-normalizer==3.4.1
+idna==3.10
+python-dotenv>=1.0.0
+
+pyinstaller==6.12.0
+pyinstaller-hooks-contrib==2025.1
+
+# Windows-only helpers (ignored on other platforms)
+colorama==0.4.6
+pywin32-ctypes==0.2.3
+pefile==2023.2.7
+
+packaging==24.2
+setuptools==75.8.2

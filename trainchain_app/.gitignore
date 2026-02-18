@@ -1,3 +1,8 @@
 .venv
 build
+dist
 __pycache__
+*.exe
+.trainchain_env
+.env
+*.log
