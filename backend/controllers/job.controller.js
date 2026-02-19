@@ -1,6 +1,6 @@
 import { validationResult } from "express-validator";
 import { uploadFolderHandler, downloadFolderAsZip } from "../services/ipfs.services.js";
-import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor } from "../services/db.services.js";
+import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor, getAllJobsByContributor } from "../services/db.services.js";
 import { completeJob } from "../utils/blockchain.js";
 
 export const uploadImageProcessingJob = async (req, res) => {
@@ -262,6 +262,22 @@ export const getContributorJob = async (req, res) => {
         res.status(200).json(job);
     } catch (error) {
         console.error("Error in getContributorJob:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export const getContributorAllJobs = async (req, res) => {
+    const { contributorAddress } = req.query;
+
+    if (!contributorAddress) {
+        return res.status(400).json({ message: "Contributor address is required" });
+    }
+
+    try {
+        const jobs = await getAllJobsByContributor(contributorAddress);
+        res.status(200).json(jobs);
+    } catch (error) {
+        console.error("Error in getContributorAllJobs:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };

@@ -182,3 +182,16 @@ export const getJobByContributor = async (contributorAddress) => {
         throw new Error("Database query failed");
     }
 };
+
+export const getAllJobsByContributor = async (contributorAddress) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM jobs WHERE contributor_address = $1 ORDER BY created_at DESC`,
+            [contributorAddress.toLowerCase()]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error("Error fetching all jobs by contributor:", error);
+        throw new Error("Database query failed");
+    }
+};

@@ -1,9 +1,9 @@
 import { useContext, useState, useEffect } from "react"
 import { UserContext } from "../context/UserContext"
-import { motion } from "framer-motion"
-import { Link } from "react-router-dom"
-import Navbar from "../components/Navbar"
+import { motion, AnimatePresence } from "framer-motion"
+import { Link, useSearchParams } from "react-router-dom"
 import Footer from "../components/Footer"
+import WalletPage from "./shared/Wallet"
 import {
     UploadCloud,
     Cpu,
@@ -19,6 +19,8 @@ import {
 
 const HomePage = () => {
     const { userAddress } = useContext(UserContext)
+    const [searchParams] = useSearchParams()
+    const tab = searchParams.get("tab")
     const [isDarkMode, setIsDarkMode] = useState(false)
     const [isVisible, setIsVisible] = useState(false)
 
@@ -36,13 +38,29 @@ const HomePage = () => {
         ? `${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`
         : "Connect Wallet"
 
+    // Handle wallet tab
+    if (tab === "wallet") {
+        return (
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key="wallet"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <WalletPage />
+                </motion.div>
+            </AnimatePresence>
+        )
+    }
+
     return (
         <>
-            <Navbar />
             <div className={`min-h-screen transition-colors duration-500 relative bg-gray-50 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
 
                 {/* Background & Welcome Container */}
-                <div className="relative shadow-xl p-6 pt-24">
+                <div className="relative shadow-xl p-6 pt-6">
                     {/* Animated Background */}
                     <div className={`absolute inset-0 overflow-hidden transition-colors duration-500 ${isDarkMode ? "bg-gray-800" : "bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500"}`}>
                         {[...Array(20)].map((_, i) => (
@@ -162,7 +180,7 @@ const HomePage = () => {
                                         ))}
                                     </ul>
 
-                                    <Link to="/requester">
+                                    <Link to="/requester?tab=create-job">
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
@@ -233,7 +251,7 @@ const HomePage = () => {
                                         ))}
                                     </ul>
 
-                                    <Link to="/contributor">
+                                    <Link to="/contributor?tab=available-jobs">
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
@@ -254,7 +272,7 @@ const HomePage = () => {
 
                 {/* About Platform Section */}
                 <section className={`py-20 ${isDarkMode ? "bg-gray-900" : "bg-white"}`}>
-                    <div className="container mx-auto px-6">
+                    <div className="container mx-auto px-6 sm:px-8 md:px-8 lg:px-12">
                         <div className="flex flex-col lg:flex-row items-center gap-12">
                             <motion.div
                                 className="lg:w-1/2"

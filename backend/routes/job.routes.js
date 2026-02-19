@@ -1,7 +1,7 @@
 import express from "express";
 import { query, body, param } from "express-validator";
 import multer from "multer";
-import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob } from "../controllers/job.controller.js";
+import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs } from "../controllers/job.controller.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -70,6 +70,12 @@ router.get (
     "/contributor/get-job",
     query("contributorAddress").notEmpty().withMessage("Contributor address is required"),
     getContributorJob
+);
+
+router.get (
+    "/contributor/all-jobs",
+    query("contributorAddress").notEmpty().withMessage("Contributor address is required"),
+    getContributorAllJobs
 );
 
 export default router;
