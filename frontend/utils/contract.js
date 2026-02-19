@@ -1,12 +1,92 @@
 import { ethers, parseEther } from "ethers";
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "./constants";
 
+// Polygon Amoy Testnet Configuration
+const POLYGON_AMOY_CONFIG = {
+  chainId: "0x13882", // 80002 in hex
+  chainName: "Polygon Amoy Testnet",
+  nativeCurrency: {
+    name: "POL",
+    symbol: "POL",
+    decimals: 18,
+  },
+  rpcUrls: ["https://rpc-amoy.polygon.technology/"],
+  blockExplorerUrls: ["https://amoy.polygonscan.com/"],
+};
+
+// Check if user is on Polygon Amoy network
+export const checkNetwork = async () => {
+  if (!window.ethereum) {
+    throw new Error("MetaMask is not installed");
+  }
+
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const network = await provider.getNetwork();
+  const chainId = network.chainId.toString();
+
+  return chainId === "80002"; // Polygon Amoy chain ID
+};
+
+// Switch to Polygon Amoy network
+export const switchToPolygonAmoy = async () => {
+  if (!window.ethereum) {
+    throw new Error("MetaMask is not installed");
+  }
+
+  try {
+    // Try to switch to the network
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: POLYGON_AMOY_CONFIG.chainId }],
+    });
+    return true;
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask
+    if (switchError.code === 4902) {
+      try {
+        // Add the network to MetaMask
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [POLYGON_AMOY_CONFIG],
+        });
+        return true;
+      } catch (addError) {
+        console.error("Error adding Polygon Amoy network:", addError);
+        throw new Error("Failed to add Polygon Amoy network to MetaMask");
+      }
+    } else {
+      console.error("Error switching to Polygon Amoy network:", switchError);
+      throw new Error("Failed to switch to Polygon Amoy network");
+    }
+  }
+};
+
+// Ensure user is on the correct network before transactions
+export const ensureCorrectNetwork = async () => {
+  const isCorrectNetwork = await checkNetwork();
+  
+  if (!isCorrectNetwork) {
+    const confirmSwitch = window.confirm(
+      "You are not connected to Polygon Amoy Testnet. Would you like to switch networks now?"
+    );
+    
+    if (confirmSwitch) {
+      await switchToPolygonAmoy();
+    } else {
+      throw new Error("Please switch to Polygon Amoy Testnet to continue");
+    }
+  }
+};
+
 // Function to get Ethereum provider and contract instance from MetaMask
 export const getEthereumContract = async () => {
   try {
     if (!window.ethereum) {
       throw new Error("Ethereum wallet not found");
     }
+
+    // Ensure user is on correct network
+    await ensureCorrectNetwork();
 
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
@@ -19,7 +99,7 @@ export const getEthereumContract = async () => {
   }
 };
 
-// Create a job with a stake (in ETH)
+// Create a job with a stake (in POL)
 export const createJob = async (jobId, folderName, folderCID, metadataCID, trainingType, modelType, stakeAmount) => {
   console.table({ jobId, folderName, folderCID, metadataCID, trainingType, modelType, stakeAmount });
 

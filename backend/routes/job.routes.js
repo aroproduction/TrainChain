@@ -1,7 +1,7 @@
 import express from "express";
 import { query, body, param } from "express-validator";
 import multer from "multer";
-import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs } from "../controllers/job.controller.js";
+import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs, confirmJobController, deleteUnconfirmedJobController, retryInfoController, jobApplyInitiate, jobApplyConfirm, jobApplyRevert } from "../controllers/job.controller.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -64,6 +64,31 @@ router.post (
     body("jobId").notEmpty().withMessage("Job ID is required"),
     body("contributorAddress").notEmpty().withMessage("Contributor address is required"),
     jobApply
+);
+
+// Two-phase: Job creation confirm / delete / retry
+router.post("/confirm/:jobId", confirmJobController);
+router.delete("/delete/:jobId", deleteUnconfirmedJobController);
+router.get("/retry-info/:jobId", retryInfoController);
+
+// Two-phase: Contributor apply initiate / confirm / revert
+router.post(
+    "/contributor/apply/initiate",
+    body("jobId").notEmpty().withMessage("Job ID is required"),
+    body("contributorAddress").notEmpty().withMessage("Contributor address is required"),
+    jobApplyInitiate
+);
+
+router.post(
+    "/contributor/apply/confirm",
+    body("jobId").notEmpty().withMessage("Job ID is required"),
+    jobApplyConfirm
+);
+
+router.post(
+    "/contributor/apply/revert",
+    body("jobId").notEmpty().withMessage("Job ID is required"),
+    jobApplyRevert
 );
 
 router.get (

@@ -2,8 +2,10 @@ import React, { useState, useContext, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { UserContext } from "../../context/UserContext";
+import { useToast } from "../../context/ToastContext";
 import axios from "axios";
 import { createJob } from "../../../utils/contract";
+import LoadingModal from "../LoadingModal";
 
 // Reusable CustomDropdown Component
 function CustomDropdown({ label, options, value, setValue }) {
@@ -70,6 +72,7 @@ export default function ImageClassificationForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { userAddress } = useContext(UserContext);
+  const toast = useToast();
 
   const modelVersions = ["yolo v8", "yolo v9", "yolo v10", "yolo v11"];
   const imgszOptions = ["256", "512", "640", "1024", "2048"];
@@ -111,12 +114,12 @@ export default function ImageClassificationForm() {
     e.preventDefault();
 
     if (!userAddress) {
-      alert("Please authenticate with MetaMask first.");
+      toast.warning("Please authenticate with MetaMask first.");
       return;
     }
 
     if (reward < 2) {
-      alert("Minimum reward value is 2 POL.");
+      toast.warning("Minimum reward value is 2 POL.");
       return;
     }
 
@@ -132,7 +135,7 @@ export default function ImageClassificationForm() {
       !datasetFolderName ||
       files.length === 0
     ) {
-      alert("Please fill in all fields.");
+      toast.warning("Please fill in all fields.");
       setIsLoading(false);
       return;
     }
@@ -171,34 +174,44 @@ export default function ImageClassificationForm() {
       );
 
       if (response.status !== 200) {
-        alert("Something went wrong while uploading files!");
+        toast.error("Something went wrong while uploading files!");
+        setIsLoading(false);
         return;
       }
   
-      // Extract IPFS CIDs from the response
+      // Extract job data from the response (status is 'unconfirmed' at this point)
       console.log("Response:", response.data);
-      const { id, folder_cid, metadata_cid } = response.data.job; // Make sure backend returns these
+      const { id, folder_cid, metadata_cid } = response.data.job;
   
-      // Step 2: List job on Blockchain
+      // Step 2: Blockchain payment
       console.log("Listing job on blockchain...", folder_cid, metadata_cid);
-      const tx = await createJob(
-        id, // Job ID
-        datasetFolderName,
-        folder_cid, // CID of uploaded dataset folder
-        metadata_cid, // CID of metadata
-        "image_classification", // Training type
-        model, // Model type
-        reward.toString() // Reward in ETH
-      );
-  
-      if (tx) {
-        alert("Job successfully listed on blockchain!");
-      } else {
-        alert("Blockchain transaction failed!");
+      try {
+        const tx = await createJob(
+          id,
+          datasetFolderName,
+          folder_cid,
+          metadata_cid,
+          "image_classification",
+          model,
+          reward.toString()
+        );
+    
+        if (tx) {
+          // Step 3: Confirm in backend (unconfirmed → pending)
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/jobs/confirm/${id}`
+          );
+          toast.success("Job successfully listed on blockchain!");
+        }
+      } catch (blockchainError) {
+        console.error("Blockchain payment failed:", blockchainError);
+        toast.error(
+          "Blockchain payment failed or was cancelled. Your job has been saved. You can retry the payment or delete the job from the 'My Jobs' tab."
+        );
       }
     } catch (error) {
       console.error("Error uploading job :", error);
-      alert("Something went wrong!", error.message);
+      toast.error("Something went wrong! " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -303,26 +316,34 @@ export default function ImageClassificationForm() {
       />
 
       <label className="block text-xl font-medium text-gray-700 mb-2">
-        Reward Value
+        Reward Value (POL)
       </label>
       <input
         type="decimal"
         value={reward}
         onChange={(e) => setReward(e.target.value)}
-        placeholder="Enter reward value"
+        placeholder="Enter reward value in POL"
         className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
       />
 
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={!isLoading ? { scale: 1.05 } : {}}
+        whileTap={!isLoading ? { scale: 0.95 } : {}}
         className={`w-full mt-6 py-4 bg-blue-600 text-white text-xl font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-lg ${
-          isLoading ? "cursor-not-allowed" : "cursor-pointer"
+          isLoading ? "cursor-not-allowed opacity-70" : "cursor-pointer"
         }`}
         onClick={handleSubmit}
+        disabled={isLoading}
       >
         {isLoading ? "Uploading..." : "Upload Job"}
       </motion.button>
+
+      {/* Loading Modal */}
+      <LoadingModal
+        isOpen={isLoading}
+        message="Creating Training Job"
+        subMessage="Uploading dataset to IPFS and processing blockchain transaction. Please confirm in your wallet..."
+      />
     </motion.div>
   );
 }

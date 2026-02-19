@@ -15,11 +15,14 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import { UserContext } from "../../context/UserContext"
+import { useToast } from "../../context/ToastContext"
+import LoadingModal from "../../components/LoadingModal"
 
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs"
 
 export default function DatasetsPage() {
   const { userAddress } = useContext(UserContext)
+  const toast = useToast();
   const [datasets, setDatasets] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedId, setExpandedId] = useState(null)
@@ -100,7 +103,7 @@ export default function DatasetsPage() {
       document.body.removeChild(link)
     } catch (error) {
       console.error("Error downloading dataset:", error)
-      alert("Failed to download dataset")
+      toast.error("Failed to download dataset")
     }
     setDownloadingId(null)
   }
@@ -454,6 +457,13 @@ export default function DatasetsPage() {
           Encryption will be enabled in a future update to provide end-to-end data security.
         </p>
       </motion.div>
+
+      {/* Loading Modal for Dataset Download */}
+      <LoadingModal
+        isOpen={downloadingId !== null}
+        message="Downloading Dataset"
+        subMessage="Please wait while we prepare your dataset file from IPFS..."
+      />
     </div>
   )
 }

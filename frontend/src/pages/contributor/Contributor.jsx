@@ -146,7 +146,7 @@ function JobCard({ job, onClick }) {
             className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full font-medium w-[40%]"
           >
             <Award size={14} />
-            <span>{job.reward || "0"}</span>
+            <span>{Number(job.reward || 0).toFixed(3)} POL</span>
           </motion.div>
         </div>
       </div>

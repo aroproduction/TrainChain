@@ -3,13 +3,16 @@
 import { useState, useContext } from "react"
 import Web3 from "web3"
 import { UserContext } from "../context/UserContext"
+import { useToast } from "../context/ToastContext"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
+import { switchToPolygonAmoy, checkNetwork } from "../../utils/contract"
 
 const Login = () => {
   const [loading, setLoading] = useState(false)
   const { saveAddress } = useContext(UserContext)
+  const toast = useToast();
   const navigate = useNavigate();
 
 
@@ -17,6 +20,24 @@ const Login = () => {
     if (window.ethereum) {
       try {
         setLoading(true)
+        
+        // Check if user is on Polygon Amoy network
+        const isCorrectNetwork = await checkNetwork();
+        
+        if (!isCorrectNetwork) {
+          const confirmSwitch = window.confirm(
+            "This app requires Polygon Amoy Testnet. Would you like to switch networks now?"
+          );
+          
+          if (confirmSwitch) {
+            await switchToPolygonAmoy();
+          } else {
+            toast.warning("Please switch to Polygon Amoy Testnet to continue");
+            setLoading(false);
+            return;
+          }
+        }
+        
         const web3 = new Web3(window.ethereum)
         await window.ethereum.request({ method: "eth_requestAccounts" })
         const accounts = await web3.eth.getAccounts()
@@ -25,12 +46,12 @@ const Login = () => {
         navigate("/home")
       } catch (error) {
         console.error("Error connecting wallet:", error)
-        alert("Failed to connect wallet. Please try again.")
+        toast.error("Failed to connect wallet. Please try again.")
       } finally {
         setLoading(false)
       }
     } else {
-      alert("MetaMask is not installed. Please install MetaMask to continue.")
+      toast.error("MetaMask is not installed. Please install MetaMask to continue.")
     }
   }
 
@@ -76,7 +97,9 @@ const Login = () => {
             </>
           )}
         </motion.button>
-        <p className="text-sm text-gray-500 mt-6 italic">Ensure MetaMask is installed and unlocked to proceed.</p>
+        <p className="text-sm text-gray-500 mt-6 italic">
+          Ensure MetaMask is installed and unlocked. App requires Polygon Amoy Testnet.
+        </p>
       </motion.div>
     </div>
   )

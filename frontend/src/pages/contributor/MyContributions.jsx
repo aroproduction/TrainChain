@@ -16,10 +16,8 @@ import {
 import axios from "axios"
 import { UserContext } from "../../context/UserContext"
 
-const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs"
-
 const statusConfig = {
-  in_progress: { icon: Zap, color: "text-amber-600", bg: "bg-amber-100", label: "In Progress" },
+  total_earned: { icon: Zap, color: "text-amber-600", bg: "bg-amber-100", label: "Total Earned" },
   completed: { icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", label: "Completed" },
   pending: { icon: Clock, color: "text-blue-600", bg: "bg-blue-100", label: "Pending" },
   failed: { icon: Clock, color: "text-red-600", bg: "bg-red-100", label: "Failed" },
@@ -62,7 +60,6 @@ export default function MyContributionsTab() {
   }, [userAddress])
 
   const completedCount = jobs.filter((j) => j.status === "completed").length
-  const inProgressCount = jobs.filter((j) => j.status === "in_progress").length
   const totalEarned = jobs
     .filter((j) => j.status === "completed")
     .reduce((sum, j) => sum + parseFloat(j.reward || 0) * 0.9, 0)
@@ -143,10 +140,10 @@ export default function MyContributionsTab() {
             <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
               <Zap size={22} className="text-amber-600" />
             </div>
-            <span className="text-gray-500">In Progress</span>
+            <span className="text-gray-500">Total Earned</span>
           </div>
           <p className="text-4xl font-bold text-gray-900">
-            {isLoading ? "—" : inProgressCount}
+            {isLoading ? "—" : totalEarned.toFixed(2)} POL
           </p>
         </motion.div>
       </div>
@@ -283,43 +280,6 @@ export default function MyContributionsTab() {
                             <span className="text-sm text-gray-400 font-normal ml-1">(90% = {earning.toFixed(4)})</span>
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-1">Folder CID</p>
-                          <p className="text-sm font-mono text-gray-600 truncate bg-gray-50 px-3 py-2 rounded-lg">
-                            {job.folder_cid}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-1">Trained Model</p>
-                          <p className="text-sm font-mono text-gray-600 truncate bg-gray-50 px-3 py-2 rounded-lg">
-                            {job.trained_model_cid || "Not yet submitted"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {job.folder_cid && (
-                          <a
-                            href={`${IPFS_GATEWAY}/${job.folder_cid}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition-all"
-                          >
-                            <ExternalLink size={16} />
-                            View Dataset on IPFS
-                          </a>
-                        )}
-                        {job.trained_model_cid && (
-                          <a
-                            href={`${IPFS_GATEWAY}/${job.trained_model_cid}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-all"
-                          >
-                            <ExternalLink size={16} />
-                            View Model on IPFS
-                          </a>
-                        )}
                       </div>
                     </div>
                   </motion.div>

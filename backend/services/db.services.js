@@ -4,14 +4,15 @@ export const createJob = async (job) => {
     try {
 
         const result = await db.query(
-            `INSERT INTO jobs (job_type, requester_address, folder_cid, metadata_cid, reward)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            `INSERT INTO jobs (job_type, requester_address, folder_cid, metadata_cid, reward, folder_name, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'unconfirmed') RETURNING *`,
             [
                 job.job_type,
                 job.requesterAddress,
                 job.folderCid,
                 job.metadataCid,
                 job.reward,
+                job.folderName,
             ]
         );
 
@@ -103,7 +104,7 @@ export const updateTrainedJobModel = async (jobId, modelCid) => {
 };
 
 export const updateJobStatus = async (jobId, status) => {
-    if (!["pending", "in-progress", "completed", "failed"].includes(status)) {
+    if (!["pending", "unconfirmed", "contributor_unconfirmed", "in_progress", "completed", "failed"].includes(status)) {
         throw new Error("Invalid status");
     }
 
@@ -140,14 +141,10 @@ export const JobsByRequester = async (requesterAddress) => {
 export const ContributorHasInProgressJob = async (contributorAddress) => {
     try {
         const response = await db.query(
-            `SELECT * FROM jobs WHERE contributor_address = $1 AND status != 'completed'`,
+            `SELECT * FROM jobs WHERE contributor_address = $1 AND status = 'in_progress'`,
             [contributorAddress]
         );
-        if(response.rows.length > 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return response.rows.length > 0;
     } catch (error) {
         throw new Error("Error fetching in-progress job by contributor:", error);
     }
@@ -193,5 +190,101 @@ export const getAllJobsByContributor = async (contributorAddress) => {
     } catch (error) {
         console.error("Error fetching all jobs by contributor:", error);
         throw new Error("Database query failed");
+    }
+};
+
+// ── Two-phase commit helpers ───────────────────────────────────────────
+
+// Confirm job creation: unconfirmed → pending
+export const confirmJobCreation = async (jobId) => {
+    try {
+        const result = await db.query(
+            `UPDATE jobs SET status = 'pending' WHERE id = $1 AND status = 'unconfirmed' RETURNING *`,
+            [jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error confirming job creation:", error);
+        throw error;
+    }
+};
+
+// Delete an unconfirmed job and its related records
+export const deleteUnconfirmedJob = async (jobId) => {
+    try {
+        await db.query(`DELETE FROM image_processing_jobs WHERE job_id = $1`, [jobId]);
+        const result = await db.query(
+            `DELETE FROM jobs WHERE id = $1 AND status = 'unconfirmed' RETURNING *`,
+            [jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error deleting unconfirmed job:", error);
+        throw error;
+    }
+};
+
+// Initiate job acceptance: pending → contributor_unconfirmed + set contributor
+export const initiateJobAcceptance = async (jobId, contributorAddress) => {
+    try {
+        const result = await db.query(
+            `UPDATE jobs 
+             SET contributor_address = $1, status = 'contributor_unconfirmed' 
+             WHERE id = $2 AND status = 'pending'
+             RETURNING *`,
+            [contributorAddress, jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error initiating job acceptance:", error);
+        throw error;
+    }
+};
+
+// Confirm job acceptance: contributor_unconfirmed → in_progress
+export const confirmJobAcceptance = async (jobId) => {
+    try {
+        const result = await db.query(
+            `UPDATE jobs SET status = 'in_progress' WHERE id = $1 AND status = 'contributor_unconfirmed' RETURNING *`,
+            [jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error confirming job acceptance:", error);
+        throw error;
+    }
+};
+
+// Revert job acceptance: contributor_unconfirmed → pending, clear contributor
+export const revertJobAcceptance = async (jobId) => {
+    try {
+        const result = await db.query(
+            `UPDATE jobs 
+             SET contributor_address = NULL, status = 'pending' 
+             WHERE id = $1 AND status = 'contributor_unconfirmed'
+             RETURNING *`,
+            [jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error reverting job acceptance:", error);
+        throw error;
+    }
+};
+
+// Get all info needed for a blockchain payment retry
+export const getRetryInfo = async (jobId) => {
+    try {
+        const result = await db.query(
+            `SELECT j.*, ip.model 
+             FROM jobs j 
+             LEFT JOIN image_processing_jobs ip ON j.id = ip.job_id 
+             WHERE j.id = $1 AND j.status = 'unconfirmed'`,
+            [jobId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error fetching retry info:", error);
+        throw error;
     }
 };

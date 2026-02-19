@@ -1,6 +1,6 @@
 import { validationResult } from "express-validator";
 import { uploadFolderHandler, downloadFolderAsZip } from "../services/ipfs.services.js";
-import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor, getAllJobsByContributor } from "../services/db.services.js";
+import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor, getAllJobsByContributor, confirmJobCreation, deleteUnconfirmedJob, initiateJobAcceptance, confirmJobAcceptance, revertJobAcceptance, getRetryInfo } from "../services/db.services.js";
 import { completeJob } from "../utils/blockchain.js";
 
 export const uploadImageProcessingJob = async (req, res) => {
@@ -33,6 +33,7 @@ export const uploadImageProcessingJob = async (req, res) => {
             folderCid,
             metadataCid,
             reward,
+            folderName,
         };
 
         const jobResult = await createJob(job);
@@ -241,6 +242,130 @@ export const jobApply = async (req, res) => {
 
     } catch (error) {
         console.error("Error in jobApply:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// ── Two-phase controllers ───────────────────────────────────────────
+
+// Confirm a job creation after blockchain payment succeeds
+export const confirmJobController = async (req, res) => {
+    const { jobId } = req.params;
+    try {
+        const job = await confirmJobCreation(jobId);
+        if (!job) {
+            return res.status(404).json({ message: "Job not found or already confirmed" });
+        }
+        res.status(200).json({ message: "Job confirmed successfully", job });
+    } catch (error) {
+        console.error("Error in confirmJobController:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Delete an unconfirmed job (user chose not to pay)
+export const deleteUnconfirmedJobController = async (req, res) => {
+    const { jobId } = req.params;
+    try {
+        const job = await deleteUnconfirmedJob(jobId);
+        if (!job) {
+            return res.status(404).json({ message: "Job not found or not in unconfirmed state" });
+        }
+        res.status(200).json({ message: "Job deleted successfully" });
+    } catch (error) {
+        console.error("Error in deleteUnconfirmedJobController:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get info needed for retrying blockchain payment
+export const retryInfoController = async (req, res) => {
+    const { jobId } = req.params;
+    try {
+        const info = await getRetryInfo(jobId);
+        if (!info) {
+            return res.status(404).json({ message: "No unconfirmed job found" });
+        }
+        res.status(200).json(info);
+    } catch (error) {
+        console.error("Error in retryInfoController:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Initiate job acceptance (sets contributor_unconfirmed)
+export const jobApplyInitiate = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { jobId, contributorAddress } = req.body;
+    if (!jobId || !contributorAddress) {
+        return res.status(400).json({ message: "Job ID and contributor address are required" });
+    }
+
+    const contributor_address = contributorAddress.toLowerCase();
+
+    try {
+        const job = await getJobById(jobId);
+        if (!job) {
+            return res.status(404).json({ message: "Job not found" });
+        }
+        if (job.status !== "pending") {
+            return res.status(400).json({ message: "Job is not available for application" });
+        }
+
+        const hasInProgressJob = await ContributorHasInProgressJob(contributor_address);
+        if (hasInProgressJob) {
+            return res.status(400).json({ message: "Contributor already has an in-progress job" });
+        }
+
+        const updatedJob = await initiateJobAcceptance(jobId, contributor_address);
+        if (!updatedJob) {
+            return res.status(400).json({ message: "Failed to initiate job acceptance" });
+        }
+        res.status(200).json({ message: "Job acceptance initiated", job: updatedJob });
+    } catch (error) {
+        console.error("Error in jobApplyInitiate:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Confirm job acceptance after blockchain payment succeeds
+export const jobApplyConfirm = async (req, res) => {
+    const { jobId } = req.body;
+    if (!jobId) {
+        return res.status(400).json({ message: "Job ID is required" });
+    }
+
+    try {
+        const job = await confirmJobAcceptance(jobId);
+        if (!job) {
+            return res.status(404).json({ message: "Job not found or not in correct state" });
+        }
+        res.status(200).json({ message: "Job acceptance confirmed", job });
+    } catch (error) {
+        console.error("Error in jobApplyConfirm:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Revert job acceptance after blockchain payment fails
+export const jobApplyRevert = async (req, res) => {
+    const { jobId } = req.body;
+    if (!jobId) {
+        return res.status(400).json({ message: "Job ID is required" });
+    }
+
+    try {
+        const job = await revertJobAcceptance(jobId);
+        if (!job) {
+            return res.status(404).json({ message: "Job not found or not in correct state" });
+        }
+        res.status(200).json({ message: "Job acceptance reverted", job });
+    } catch (error) {
+        console.error("Error in jobApplyRevert:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
