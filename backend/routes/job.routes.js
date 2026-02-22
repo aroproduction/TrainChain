@@ -1,7 +1,7 @@
 import express from "express";
 import { query, body, param } from "express-validator";
 import multer from "multer";
-import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs, confirmJobController, deleteUnconfirmedJobController, retryInfoController, jobApplyInitiate, jobApplyConfirm, jobApplyRevert } from "../controllers/job.controller.js";
+import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs, confirmJobController, deleteUnconfirmedJobController, retryInfoController, jobApplyInitiate, jobApplyConfirm, jobApplyRevert, acceptLlmSlotController, getLlmShardController, getLlmJobsController, uploadLlmFinetuneJob, confirmLlmJobController, deleteLlmJobController, submitAdapterController, getLlmRequesterJobsController, getLlmSlotsController, finalizeLlmJobController, aggregationFailedController, getMyLlmSlotController, uploadAdapterController, } from "../controllers/job.controller.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -101,6 +101,88 @@ router.get (
     "/contributor/all-jobs",
     query("contributorAddress").notEmpty().withMessage("Contributor address is required"),
     getContributorAllJobs
+);
+
+// ── LLM Federated Finetuning routes ──────────────────────────────────────────
+
+// Browse available LLM jobs
+router.get('/llm/get-jobs', getLlmJobsController);
+
+// Contributor accepts a slot (called AFTER MetaMask tx succeeds)
+router.post(
+    '/llm/accept-slot',
+    body('jobId').isInt().withMessage('jobId must be an integer'),
+    body('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+    acceptLlmSlotController
+);
+
+// Contributor downloads their data shard
+router.get(
+    '/llm/get-shard/:jobId',
+    param('jobId').isInt().withMessage('jobId must be an integer'),
+    query('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+    getLlmShardController
+);
+
+// ── LLM job creation two-phase + adapter submission ──────────────────
+
+// Upload dataset to IPFS + create unconfirmed DB record
+router.post(
+    '/llm/upload',
+    upload.array('files'),
+    [
+        body('folderName').notEmpty().withMessage('folderName is required'),
+        body('modelName').notEmpty().withMessage('modelName is required'),
+        body('maxContributors').isInt({ min: 2, max: 10 }).withMessage('maxContributors must be 2–10'),
+        body('rewardPerContributor').isFloat({ gt: 0 }).withMessage('rewardPerContributor must be > 0'),
+        body('requesterAddress').notEmpty().withMessage('requesterAddress is required'),
+    ],
+    uploadLlmFinetuneJob
+);
+
+// Confirm after MetaMask tx succeeds: unconfirmed → pending
+router.post('/llm/confirm/:jobId', confirmLlmJobController);
+
+// Delete if MetaMask tx cancelled or failed
+router.delete('/llm/delete/:jobId', deleteLlmJobController);
+
+// Contributor submits their LoRA adapter CID (after blockchain tx)
+router.post(
+    '/llm/submit-adapter',
+    [
+        body('jobId').isInt().withMessage('jobId must be an integer'),
+        body('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+        body('adapterCid').notEmpty().withMessage('adapterCid is required'),
+    ],
+    submitAdapterController
+);
+
+// Requester's LLM job history
+router.get(
+    '/llm/my-requests',
+    query('requesterAddress').notEmpty().withMessage('requesterAddress is required'),
+    getLlmRequesterJobsController
+);
+
+// Used by aggregation microservice
+router.get('/llm/slots/:jobId', getLlmSlotsController);
+router.post('/llm/finalize/:jobId', finalizeLlmJobController);
+router.post('/llm/aggregation-failed/:jobId', aggregationFailedController);
+
+// Used by contributor desktop app
+router.get(
+    '/llm/my-slot',
+    query('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+    getMyLlmSlotController
+);
+router.post(
+    '/llm/upload-adapter',
+    upload.array('file'),
+    [
+        body('jobId').notEmpty().withMessage('jobId is required'),
+        body('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+    ],
+    uploadAdapterController
 );
 
 export default router;

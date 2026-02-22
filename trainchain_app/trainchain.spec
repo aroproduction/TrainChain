@@ -58,6 +58,8 @@ added_datas = [
     # Training scripts — run by the managed venv's python at runtime
     (str(_here / "train_yolo.py"), "."),
     (str(_here / "env_setup.py"),  "."),
+    (str(_here / "training" / "train_llm.py"),  "training"),
+    (str(_here / "training" / "spec_check.py"), "training"),
 
     # .env config — read at runtime for API_URL
     (str(_here / ".env"), "."),
@@ -105,6 +107,7 @@ a = Analysis(
         # Heavy ML libs are intentionally NOT frozen — they live in the
         # uv-managed .trainchain_env/ venv instead.
         "torch", "ultralytics", "transformers", "numpy", "cv2",
+        "peft", "datasets", "accelerate", "safetensors", "sentencepiece",
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

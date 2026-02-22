@@ -404,5 +404,98 @@ export const contractABI = [
     "stateMutability": "view",
     "type": "function",
     "constant": true
-  }
+  },
+  // ── Federated job functions ───────────────────────────────────────────────
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_jobId",           "type": "uint256" },
+      { "internalType": "string",  "name": "_datasetCID",      "type": "string"  },
+      { "internalType": "string",  "name": "_metadataCID",     "type": "string"  },
+      { "internalType": "string",  "name": "_modelName",       "type": "string"  },
+      { "internalType": "uint8",   "name": "_maxContributors", "type": "uint8"   }
+    ],
+    "name": "createFederatedJob",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "_jobId", "type": "uint256" }],
+    "name": "acceptFederatedJob",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_jobId",      "type": "uint256" },
+      { "internalType": "string",  "name": "_adapterCID", "type": "string"  }
+    ],
+    "name": "submitAdapter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "_jobId", "type": "uint256" }],
+    "name": "getFedJobDetails",
+    "outputs": [
+      { "internalType": "string",  "name": "datasetCID",       "type": "string"  },
+      { "internalType": "string",  "name": "metadataCID",      "type": "string"  },
+      { "internalType": "string",  "name": "modelName",        "type": "string"  },
+      { "internalType": "address", "name": "requester",        "type": "address" },
+      { "internalType": "uint8",   "name": "maxContributors",  "type": "uint8"   },
+      { "internalType": "uint8",   "name": "submittedCount",   "type": "uint8"   },
+      { "internalType": "uint256", "name": "contributorCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "stakeAmount",      "type": "uint256" },
+      { "internalType": "bool",    "name": "isCompleted",      "type": "bool"    },
+      { "internalType": "string",  "name": "mergedAdapterCID", "type": "string"  }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // ── Federated job events ──────────────────────────────────────────────────
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "uint256", "name": "jobId",           "type": "uint256" },
+      { "indexed": true,  "internalType": "address", "name": "requester",       "type": "address" },
+      { "indexed": false, "internalType": "uint8",   "name": "maxContributors", "type": "uint8"   },
+      { "indexed": false, "internalType": "uint256", "name": "stakeAmount",     "type": "uint256" }
+    ],
+    "name": "FedJobCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "uint256", "name": "jobId",       "type": "uint256" },
+      { "indexed": true,  "internalType": "address", "name": "contributor", "type": "address" },
+      { "indexed": false, "internalType": "uint8",   "name": "slotIndex",   "type": "uint8"   }
+    ],
+    "name": "FedJobSlotAccepted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "uint256", "name": "jobId",          "type": "uint256" },
+      { "indexed": true,  "internalType": "address", "name": "contributor",    "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "adapterCID",     "type": "string"  },
+      { "indexed": false, "internalType": "uint8",   "name": "submittedCount", "type": "uint8"   }
+    ],
+    "name": "AdapterSubmitted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "uint256", "name": "jobId",                 "type": "uint256" },
+      { "indexed": true,  "internalType": "address", "name": "requester",             "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "mergedAdapterCID",      "type": "string"  },
+      { "indexed": false, "internalType": "uint256", "name": "rewardPerContributor",  "type": "uint256" }
+    ],
+    "name": "FedJobCompleted",
+    "type": "event"
+  },
 ];

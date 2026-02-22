@@ -242,3 +242,67 @@ export const getJobDetails = async (jobId) => {
     throw new Error("Failed to fetch job details. Please try again.");
   }
 };
+
+// ── Federated finetuning contract functions ──────────────────────────────────
+
+/**
+ * Create a new federated finetuning job on-chain.
+ *
+ * @param {number|string} jobId
+ * @param {string}        datasetCID       - IPFS CID of the uploaded dataset ZIP
+ * @param {string}        metadataCID      - IPFS CID of the metadata JSON
+ * @param {string}        modelName        - HuggingFace model ID
+ * @param {number}        maxContributors  - 2–10
+ * @param {string}        stakeAmount      - Total POL to stake, as a decimal string e.g. "0.333333"
+ */
+export const createFederatedJob = async (
+    jobId, datasetCID, metadataCID, modelName, maxContributors, stakeAmount
+) => {
+    if (!jobId || !datasetCID || !metadataCID || !modelName || !maxContributors || !stakeAmount) {
+        throw new Error('All fields are required to create a federated job');
+    }
+
+    try {
+        const contract = await getEthereumContract();
+        const tx = await contract.createFederatedJob(
+            jobId,
+            datasetCID,
+            metadataCID,
+            modelName,
+            maxContributors,
+            { value: parseEther(String(stakeAmount)), gasLimit: 500000 }
+        );
+        await tx.wait();
+        return tx;
+    } catch (error) {
+        console.error('Error creating federated job:', error.message || error);
+        throw new Error('Failed to create federated job. Check your wallet and try again.');
+    }
+};
+
+/**
+ * Read federated job details from the contract (view call — no gas).
+ *
+ * @param {number|string} jobId
+ */
+export const getFederatedJobDetails = async (jobId) => {
+    try {
+        const contract = await getEthereumContract();
+        const d = await contract.getFedJobDetails(jobId);
+        return {
+            datasetCID:       d.datasetCID,
+            metadataCID:      d.metadataCID,
+            modelName:        d.modelName,
+            requester:        d.requester,
+            maxContributors:  Number(d.maxContributors),
+            submittedCount:   Number(d.submittedCount),
+            contributorCount: Number(d.contributorCount),
+            stakeAmount:      ethers.formatEther(d.stakeAmount),
+            isCompleted:      d.isCompleted,
+            mergedAdapterCID: d.mergedAdapterCID,
+        };
+    } catch (error) {
+        console.error('Error fetching federated job details:', error.message || error);
+        throw new Error('Failed to fetch federated job details.');
+    }
+};

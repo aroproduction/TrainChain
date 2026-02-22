@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronDown, ChevronUp, Image, Smile, Upload, Cpu, CheckCircle } from "lucide-react"
+import { ChevronDown, ChevronUp, Image, Smile, Upload, Cpu, CheckCircle, Brain } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import ImageClassificationForm from "../../components/ModelForms/imageClassification"
+import LLMFinetuneForm from "../../components/ModelForms/LLMFinetuneForm"
 
 // — Sub-page imports —
 import MyJobsTab from "./MyJobsTab"
@@ -10,11 +11,12 @@ import DatasetsPage from "./Datasets"
 import PaymentsPage from "./Payments"
 import WalletPage from "../shared/Wallet"
 
-const modelTypes = ["Image Classification", "Sentiment Analysis"]
+const modelTypes = ["Image Classification", "Sentiment Analysis", "LLM Finetune"]
 
 const modelIcons = {
   "Image Classification": <Image size={20} className="mr-2" />,
   "Sentiment Analysis": <Smile size={20} className="mr-2" />,
+  "LLM Finetune": <Brain size={20} className="mr-2" />,
 }
 
 const workflowSteps = [
@@ -130,6 +132,9 @@ function CreateJobTab() {
         >
           {selectedModel === "Image Classification" && (
             <ImageClassificationForm />
+          )}
+          {selectedModel === "LLM Finetune" && (
+            <LLMFinetuneForm />
           )}
         </motion.div>
       )}

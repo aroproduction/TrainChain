@@ -8,6 +8,7 @@ Training now runs inside the uv-managed venv via train_yolo.py.
 
 import sys
 import os
+import json
 import threading
 import subprocess
 import traceback
@@ -29,7 +30,9 @@ sys.path.insert(0, str(_ROOT))
 from env_setup import get_python_bin, ENV_DIR, load_api_url  # noqa: E402
 
 # Absolute path to train_yolo.py shipped with the app
-_TRAIN_YOLO = _ROOT / "train_yolo.py"
+_TRAIN_YOLO  = _ROOT / "train_yolo.py"
+_TRAIN_LLM   = _ROOT / "training" / "train_llm.py"
+_SPEC_CHECK  = _ROOT / "training" / "spec_check.py"
 
 # API base URL — read from .env, falls back to production
 _API_URL = load_api_url()
@@ -66,8 +69,9 @@ def _write_training_log(lines: list[str], job_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 class _Signals(QObject):
-    log    = pyqtSignal(str)
-    done   = pyqtSignal(bool, str)   # success, message
+    log        = pyqtSignal(str)
+    done       = pyqtSignal(bool, str)   # success, message
+    spec_check = pyqtSignal(bool, str)  # passed, display_message
 
 # ---------------------------------------------------------------------------
 # JobsPage
@@ -89,6 +93,7 @@ class JobsPage(QMainWindow):
         self._signals = _Signals()
         self._signals.log.connect(self._on_log)
         self._signals.done.connect(self._on_done)
+        self._signals.spec_check.connect(self._on_spec_check_done)
         self._training_process: subprocess.Popen | None = None  # tracked for cancellation
 
         container = QWidget()
@@ -103,6 +108,21 @@ class JobsPage(QMainWindow):
         self.label.setWordWrap(True)
         self.label.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.layout.addWidget(self.label)
+
+        # Hardware spec check result (shown for LLM finetune jobs)
+        self.spec_label = QLabel("", self)
+        self.spec_label.setFont(QFont("Helvetica", 10))
+        self.spec_label.setWordWrap(True)
+        self.spec_label.setVisible(False)
+        self.layout.addWidget(self.spec_label)
+
+        # Refresh button (shown when no job assigned yet, or shard not ready)
+        self.refresh_button = QPushButton("🔄  Refresh / Check for Jobs", self)
+        self.refresh_button.setFont(QFont("Helvetica", 10))
+        self.refresh_button.setFixedSize(220, 38)
+        self.refresh_button.clicked.connect(self.fetch_job_details)
+        self.refresh_button.setVisible(False)
+        self.layout.addWidget(self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.hardware_group = QGroupBox("Select Hardware")
         self.hardware_group.setFont(QFont("Helvetica", 11))
@@ -232,7 +252,13 @@ class JobsPage(QMainWindow):
     # ── API fetch ─────────────────────────────────────────────────────────
 
     def fetch_job_details(self):
+        # Reset spec label for a fresh check
+        self.spec_label.setVisible(False)
+        self.spec_label.setText("")
+        self.refresh_button.setVisible(False)
+
         try:
+            # ── 1. Check for an image-processing job (existing flow) ──────────
             response = requests.get(
                 f"{_API_URL}/jobs/contributor/get-job"
                 f"?contributorAddress={self.wallet_address}",
@@ -248,17 +274,83 @@ class JobsPage(QMainWindow):
                         f"Wallet: {self.wallet_address}\n"
                         f"Job ID: {self.job_id}\n"
                         f"Type: {self.job_type}\n"
-                        f"Reward: {data.get('reward', 'N/A')} ETH"
+                        f"Reward: {data.get('reward', 'N/A')} POL"
                     )
                     self.hardware_group.setVisible(True)
                     self.start_button.setVisible(True)
                     return
-            self.label.setText(f"Wallet: {self.wallet_address}\nNo jobs available.")
+
+            # ── 2. Check for an LLM federated finetuning slot ─────────────────
+            llm_res = requests.get(
+                f"{_API_URL}/jobs/llm/my-slot",
+                params={"contributorAddress": self.wallet_address},
+                timeout=15,
+            )
+            if llm_res.status_code == 200:
+                slot = llm_res.json()
+                if slot and "job_id" in slot:
+                    self._job_data = slot
+                    self.job_id    = slot.get("job_id")
+                    self.job_type  = "llm_finetune"
+
+                    # Already submitted — training complete
+                    if slot.get("slot_status") == "submitted" or slot.get("adapter_cid"):
+                        self.label.setText(
+                            f"Wallet: {self.wallet_address}\n"
+                            f"Job ID: {self.job_id}\n"
+                            f"Model: {slot.get('model_name', 'N/A')}\n"
+                            f"\u2705 LoRA adapter submitted successfully! "
+                            f"Waiting for aggregation to complete."
+                        )
+                        self.hardware_group.setVisible(False)
+                        self.start_button.setVisible(False)
+                        return
+
+                    # Sharding still in progress — shard_cid not yet assigned
+                    if not slot.get("shard_cid"):
+                        self.label.setText(
+                            f"Wallet: {self.wallet_address}\n"
+                            f"Job ID: {self.job_id}\n"
+                            f"Model: {slot.get('model_name', 'N/A')}\n"
+                            f"\u23f3 Waiting for dataset sharding to complete\u2026\n"
+                            f"Tap Refresh in a moment."
+                        )
+                        self.hardware_group.setVisible(False)
+                        self.start_button.setVisible(False)
+                        self.refresh_button.setVisible(True)
+                        return
+
+                    # Shard ready — show job info and run hardware spec check
+                    self.label.setText(
+                        f"Wallet: {self.wallet_address}\n"
+                        f"Job ID: {self.job_id}\n"
+                        f"Type: LLM Finetune\n"
+                        f"Model: {slot.get('model_name', 'N/A')}\n"
+                        f"Reward: {slot.get('reward', 'N/A')} POL\n"
+                        f"Slot: #{slot.get('slot_index', '?')}\n"
+                        f"\u23f3 Checking hardware compatibility\u2026"
+                    )
+                    self.hardware_group.setVisible(True)
+                    self.start_button.setVisible(True)
+                    self.start_button.setEnabled(False)  # disabled until spec check passes
+                    # Run spec check in background so UI stays responsive
+                    threading.Thread(
+                        target=self._run_spec_check,
+                        args=(slot.get("model_name", ""),),
+                        daemon=True,
+                    ).start()
+                    return
+
+            # ── 3. Nothing found ──────────────────────────────────────────────
+            self.label.setText(
+                f"Wallet: {self.wallet_address}\nNo jobs available."
+            )
         except requests.RequestException as exc:
             self.label.setText(f"Request failed: {exc}")
 
         self.start_button.setVisible(False)
         self.hardware_group.setVisible(False)
+        self.refresh_button.setVisible(True)
 
     # ── Training (no Docker — runs train_yolo.py in the uv venv) ─────────
 
@@ -282,7 +374,9 @@ class JobsPage(QMainWindow):
                 return
 
             job_type = self.job_type or "image_processing"
-            if job_type == "image_processing":
+            if job_type == "llm_finetune":
+                self._run_llm(python_bin, self._job_data)
+            elif job_type == "image_processing":
                 self._run_yolo(python_bin, self._job_data)
             else:
                 self._signals.done.emit(False, f"Unsupported job type: {job_type}")
@@ -351,6 +445,192 @@ class JobsPage(QMainWindow):
                 False,
                 f"{exc}\n\n{traceback.format_exc()}"
             )
+
+    # ── LLM: hardware spec check ──────────────────────────────────────────
+
+    def _on_spec_check_done(self, passed: bool, message: str) -> None:
+        """Called on the main thread when spec_check.py finishes."""
+        slot = self._job_data
+        base_info = (
+            f"Wallet: {self.wallet_address}\n"
+            f"Job ID: {self.job_id}\n"
+            f"Type: LLM Finetune\n"
+            f"Model: {slot.get('model_name', 'N/A')}\n"
+            f"Reward: {slot.get('reward', 'N/A')} POL\n"
+            f"Slot: #{slot.get('slot_index', '?')}"
+        )
+        self.label.setText(base_info)
+
+        if passed:
+            self.spec_label.setStyleSheet(
+                "color: #1B5E20; background-color: #E8F5E9; "
+                "border: 1px solid #A5D6A7; border-radius: 4px; padding: 8px;"
+            )
+        else:
+            self.spec_label.setStyleSheet(
+                "color: #B71C1C; background-color: #FFEBEE; "
+                "border: 1px solid #EF9A9A; border-radius: 4px; padding: 8px;"
+            )
+        self.spec_label.setText(message)
+        self.spec_label.setVisible(True)
+        # Enable Start Training button only when spec check passes
+        self.start_button.setEnabled(passed)
+
+    def _run_spec_check(self, model_name: str) -> None:
+        """Run spec_check.py in the managed venv; emit result to main thread."""
+        try:
+            python_bin = get_python_bin()
+            if not python_bin.exists():
+                self._signals.spec_check.emit(
+                    False,
+                    "\u26a0\ufe0f Training environment not set up. "
+                    "Restart the app to install dependencies.",
+                )
+                return
+
+            if not _SPEC_CHECK.exists():
+                # Spec script missing — allow training rather than hard-block
+                self._signals.spec_check.emit(
+                    True,
+                    "\u26a0\ufe0f Hardware check unavailable (script not found). "
+                    "Proceeding anyway.",
+                )
+                return
+
+            popen_kw: dict = {}
+            if os.name == "nt":
+                popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+            proc = subprocess.run(
+                [
+                    str(python_bin), str(_SPEC_CHECK),
+                    "--model-name", model_name,
+                    "--disk-path",  str(_ROOT),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                **popen_kw,
+            )
+
+            stdout = proc.stdout.strip()
+            if not stdout:
+                self._signals.spec_check.emit(
+                    True,
+                    "\u2705 Hardware check produced no output \u2014 proceeding.",
+                )
+                return
+
+            result   = json.loads(stdout)
+            errors   = result.get("errors",   [])
+            warnings = result.get("warnings", [])
+            vram_gb  = result.get("vram_gb")
+            ram_gb   = result.get("ram_gb", 0)
+
+            if result["ok"]:
+                parts = []
+                if vram_gb is not None:
+                    parts.append(f"VRAM: {vram_gb} GB")
+                parts.append(f"RAM: {ram_gb} GB")
+                hw_str = "  |  ".join(parts)
+                if warnings:
+                    msg = f"\u26a0\ufe0f {warnings[0]}\n({hw_str})"
+                    self._signals.spec_check.emit(True, msg)
+                else:
+                    self._signals.spec_check.emit(
+                        True,
+                        f"\u2705 Hardware OK \u2014 {hw_str}",
+                    )
+            else:
+                self._signals.spec_check.emit(
+                    False,
+                    "\u274c " + "  |  ".join(errors),
+                )
+        except Exception as exc:
+            # Never hard-block training on a failed spec check
+            self._signals.spec_check.emit(
+                True,
+                f"\u26a0\ufe0f Hardware check failed ({exc}) \u2014 proceeding anyway.",
+            )
+
+    # ── LLM: training runner ──────────────────────────────────────────────
+
+    def _run_llm(self, python_bin: Path, slot_data: dict) -> None:
+        """Invoke train_llm.py for a federated LLM finetuning job."""
+        if not _TRAIN_LLM.exists():
+            self._signals.done.emit(
+                False,
+                f"LLM training script not found:\n{_TRAIN_LLM}\n\n"
+                "Please reinstall the application.",
+            )
+            return
+
+        cmd = [
+            str(python_bin),
+            str(_TRAIN_LLM),
+            "--job-id",             str(self.job_id),
+            "--api-url",            _API_URL,
+            "--contributor-wallet", self.wallet_address,
+        ]
+
+        hardware = "GPU" if self.use_gpu else "CPU"
+        self._signals.log.emit(
+            f"Starting LLM finetuning for Job {self.job_id} using {hardware}\u2026"
+        )
+
+        env = os.environ.copy()
+        if not self.use_gpu:
+            env["CUDA_VISIBLE_DEVICES"] = ""
+        # Ensure the subprocess prints UTF-8 so emoji log lines don't crash
+        # on Windows cp1252 terminals (same reason _run_yolo sets this).
+        env["PYTHONIOENCODING"] = "utf-8"
+
+        popen_kw: dict = {}
+        if os.name == "nt":
+            popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                env=env,
+                **popen_kw,
+            )
+            self._training_process = process
+            assert process.stdout is not None
+            output_lines: list[str] = []
+            for line in process.stdout:
+                stripped = line.rstrip()
+                output_lines.append(stripped)
+                self._signals.log.emit(stripped)
+            process.wait()
+            _write_training_log(output_lines, str(self.job_id))
+
+            if process.returncode == 0:
+                self._signals.done.emit(True, "")
+            elif process.returncode == 2:
+                # Shard not ready — surface a friendly retry message
+                self._signals.done.emit(
+                    False,
+                    "Dataset shard is not ready yet.\n\n"
+                    "The backend is still sharding the dataset. "
+                    "Please wait a few minutes, tap Refresh, and try again.",
+                )
+            else:
+                tail = "\n".join(output_lines[-50:])
+                self._signals.done.emit(
+                    False,
+                    f"LLM training exited with code {process.returncode}.\n\n"
+                    f"Command:\n{' '.join(str(c) for c in cmd)}\n\n"
+                    f"Last output:\n{tail}",
+                )
+        except Exception as exc:
+            self._kill_training()
+            self._signals.done.emit(False, f"{exc}\n\n{traceback.format_exc()}")
 
 
 # ---------------------------------------------------------------------------

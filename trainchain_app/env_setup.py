@@ -121,6 +121,18 @@ _OTHER_PACKAGES = [
     "python-dotenv",
 ]
 
+# LLM finetuning stack (installed after the base packages)
+# These are only needed for llm_finetune jobs, but we pre-install them
+# so the first LLM job starts immediately without an extra setup delay.
+_LLM_PACKAGES = [
+    "transformers",
+    "peft",
+    "datasets",
+    "accelerate",
+    "safetensors",
+    "sentencepiece",
+]
+
 
 def setup_env(progress_cb=None, log_cb=None) -> None:
     """
@@ -182,7 +194,18 @@ def setup_env(progress_cb=None, log_cb=None) -> None:
             [str(uv), "pip", "install", pkg, "--python", python_bin],
             _log,
         )
-        _progress(60 + int(35 * (idx + 1) / total))
+        _progress(60 + int(25 * (idx + 1) / total))
+
+    # 4. Install LLM training packages
+    _log("Installing LLM finetuning dependencies \u2026")
+    llm_total = len(_LLM_PACKAGES)
+    for idx, pkg in enumerate(_LLM_PACKAGES):
+        _log(f"Installing {pkg} \u2026")
+        _run(
+            [str(uv), "pip", "install", pkg, "--python", python_bin],
+            _log,
+        )
+        _progress(85 + int(13 * (idx + 1) / llm_total))
 
     _progress(100)
     _log("Environment setup complete.")

@@ -7,10 +7,11 @@ const { Pool } = pkg;
 // Create a new Pool instance
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false, // required for SSL connection
-    sslmode: "require",
-  }
+  // ssl: {
+  //   rejectUnauthorized: false, // required for SSL connection
+  //   sslmode: "require",
+  // }
+  ssl: false, // Disable SSL for local development (Ganache + local PostgreSQL)
 });
 
 // Check the connection

@@ -10,6 +10,111 @@ const web3 = new Web3(new Web3.providers.HttpProvider(POLYGON_RPC_URL));
 export const contractABI = [
     {
       "inputs": [
+        { "internalType": "uint256", "name": "_jobId", "type": "uint256" },
+        { "internalType": "string", "name": "_datasetCID", "type": "string" },
+        { "internalType": "string", "name": "_metadataCID", "type": "string" },
+        { "internalType": "string", "name": "_modelName", "type": "string" },
+        { "internalType": "uint8", "name": "_maxContributors", "type": "uint8" }
+      ],
+      "name": "createFederatedJob",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    // acceptFederatedJob — owner-only, records contributor slot
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "_jobId",       "type": "uint256" },
+        { "internalType": "address", "name": "_contributor", "type": "address" }
+      ],
+      "name": "acceptFederatedJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    // submitAdapter — owner-only, records adapter CID on behalf of contributor
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "_jobId",       "type": "uint256" },
+        { "internalType": "address", "name": "_contributor", "type": "address" },
+        { "internalType": "string",  "name": "_adapterCID",  "type": "string"  }
+      ],
+      "name": "submitAdapter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    // completeFederatedJob
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "_jobId", "type": "uint256" },
+        { "internalType": "string", "name": "_mergedAdapterCID", "type": "string" }
+      ],
+      "name": "completeFederatedJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    // getFedJobAdapters
+    {
+      "inputs": [{ "internalType": "uint256", "name": "_jobId", "type": "uint256" }],
+      "name": "getFedJobAdapters",
+      "outputs": [
+        { "internalType": "address[]", "name": "contributorList", "type": "address[]" },
+        { "internalType": "string[]", "name": "adapterCIDs", "type": "string[]" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    // getFedJobDetails
+    {
+      "inputs": [{ "internalType": "uint256", "name": "_jobId", "type": "uint256" }],
+      "name": "getFedJobDetails",
+      "outputs": [
+        { "internalType": "string", "name": "datasetCID", "type": "string" },
+        { "internalType": "string", "name": "metadataCID", "type": "string" },
+        { "internalType": "string", "name": "modelName", "type": "string" },
+        { "internalType": "address", "name": "requester", "type": "address" },
+        { "internalType": "uint8", "name": "maxContributors", "type": "uint8" },
+        { "internalType": "uint8", "name": "submittedCount", "type": "uint8" },
+        { "internalType": "uint256", "name": "contributorCount", "type": "uint256" },
+        { "internalType": "uint256", "name": "stakeAmount", "type": "uint256" },
+        { "internalType": "bool", "name": "isCompleted", "type": "bool" },
+        { "internalType": "string", "name": "mergedAdapterCID", "type": "string" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    // Events
+    { "anonymous": false, "inputs": [
+        { "indexed": true,  "name": "jobId", "type": "uint256" },
+        { "indexed": true,  "name": "requester", "type": "address" },
+        { "indexed": false, "name": "maxContributors", "type": "uint8" },
+        { "indexed": false, "name": "stakeAmount", "type": "uint256" }
+      ], "name": "FedJobCreated", "type": "event" 
+    },
+    { "anonymous": false, "inputs": [
+        { "indexed": true,  "name": "jobId", "type": "uint256" },
+        { "indexed": true,  "name": "contributor", "type": "address" },
+        { "indexed": false, "name": "slotIndex", "type": "uint8" }
+      ], "name": "FedJobSlotAccepted", "type": "event" 
+    },
+    { "anonymous": false, "inputs": [
+        { "indexed": true,  "name": "jobId", "type": "uint256" },
+        { "indexed": true,  "name": "contributor", "type": "address" },
+        { "indexed": false, "name": "adapterCID", "type": "string" },
+        { "indexed": false, "name": "submittedCount", "type": "uint8" }
+      ], "name": "AdapterSubmitted", "type": "event" 
+    },
+    { "anonymous": false, "inputs": [
+        { "indexed": true,  "name": "jobId", "type": "uint256" },
+        { "indexed": true,  "name": "requester", "type": "address" },
+        { "indexed": false, "name": "mergedAdapterCID", "type": "string" },
+        { "indexed": false, "name": "rewardPerContributor", "type": "uint256" }
+      ], "name": "FedJobCompleted", "type": "event" 
+    },
+    {
+      "inputs": [
         {
           "internalType": "address",
           "name": "_platformWallet",
@@ -18,6 +123,124 @@ export const contractABI = [
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "contributor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "adapterCID",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "submittedCount",
+          "type": "uint8"
+        }
+      ],
+      "name": "AdapterSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "requester",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "mergedAdapterCID",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rewardPerContributor",
+          "type": "uint256"
+        }
+      ],
+      "name": "FedJobCompleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "requester",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "maxContributors",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "FedJobCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "contributor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "slotIndex",
+          "type": "uint8"
+        }
+      ],
+      "name": "FedJobSlotAccepted",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -143,8 +366,87 @@ export const contractABI = [
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_contributor",
+          "type": "address"
+        }
+      ],
+      "name": "acceptFederatedJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "acceptJob",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_mergedAdapterCID",
+          "type": "string"
+        }
+      ],
+      "name": "completeFederatedJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_trainedModelCID",
+          "type": "string"
+        }
+      ],
+      "name": "completeJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
       "inputs": [
@@ -163,8 +465,355 @@ export const contractABI = [
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_datasetCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_metadataCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_modelName",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "_maxContributors",
+          "type": "uint8"
+        }
+      ],
+      "name": "createFederatedJob",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_folderName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_folderCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_metadataCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_trainingType",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_modelType",
+          "type": "string"
+        }
+      ],
+      "name": "createJob",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "deleteJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "fedJobAdapters",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "fedJobs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "datasetCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "metadataCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "modelName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "requester",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "maxContributors",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "submittedCount",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isCompleted",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "mergedAdapterCID",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getFedJobAdapters",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "contributorList",
+          "type": "address[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "adapterCIDs",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getFedJobDetails",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "datasetCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "metadataCID",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "modelName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "requester",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "maxContributors",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "submittedCount",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "contributorCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isCompleted",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "mergedAdapterCID",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getJobDetails",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isFedContributor",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -233,8 +882,20 @@ export const contractABI = [
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [],
@@ -247,171 +908,8 @@ export const contractABI = [
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "_folderName",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_folderCID",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_metadataCID",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_trainingType",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_modelType",
-          "type": "string"
-        }
-      ],
-      "name": "createJob",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function",
-      "payable": true
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        }
-      ],
-      "name": "acceptJob",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function",
-      "payable": true
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        }
-      ],
-      "name": "deleteJob",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        }
-      ],
-      "name": "cancelJob",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "_trainedModelCID",
-          "type": "string"
-        }
-      ],
-      "name": "completeJob",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_jobId",
-          "type": "uint256"
-        }
-      ],
-      "name": "getJobDetails",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "constant": true
-    }
   ];
 
 // Add private key validation and formatting
@@ -629,4 +1127,81 @@ const debugTransaction = async () => {
 // Add this line after creating the account
 debugTransaction().catch(console.error);
 
-export { createJob, acceptJob, deleteJob, cancelJob, completeJob, getJobDetails };
+// ── Federated job blockchain helpers ─────────────────────────────────────────
+
+/**
+ * Record a contributor's slot acceptance on-chain (owner signs on behalf of contributor).
+ * Called by acceptLlmSlotController after the DB slot is reserved.
+ */
+const acceptFederatedJob = async (jobId, contributorAddress) => {
+    const data = contract.methods.acceptFederatedJob(jobId, contributorAddress).encodeABI();
+    const gas = await web3.eth.estimateGas({ from: account.address, to: CONTRACT_ADDRESS, data });
+    const gasPrice = await web3.eth.getGasPrice();
+    const nonce = await web3.eth.getTransactionCount(account.address, 'latest');
+
+    const signedTx = await web3.eth.accounts.signTransaction(
+        { nonce, from: account.address, to: CONTRACT_ADDRESS, data, gas, gasPrice },
+        FORMATTED_PRIVATE_KEY
+    );
+    return await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+};
+
+/**
+ * Record a contributor's adapter submission on-chain (owner signs on behalf of contributor).
+ * Called by submitAdapterController after the adapter CID is stored in the DB.
+ */
+const submitAdapter = async (jobId, contributorAddress, adapterCID) => {
+    const data = contract.methods.submitAdapter(jobId, contributorAddress, adapterCID).encodeABI();
+    const gas = await web3.eth.estimateGas({ from: account.address, to: CONTRACT_ADDRESS, data });
+    const gasPrice = await web3.eth.getGasPrice();
+    const nonce = await web3.eth.getTransactionCount(account.address, 'latest');
+
+    const signedTx = await web3.eth.accounts.signTransaction(
+        { nonce, from: account.address, to: CONTRACT_ADDRESS, data, gas, gasPrice },
+        FORMATTED_PRIVATE_KEY
+    );
+    return await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+};
+
+const completeFederatedJob = async (jobId, mergedAdapterCID) => {
+    const data = contract.methods.completeFederatedJob(jobId, mergedAdapterCID).encodeABI();
+    const gas = await web3.eth.estimateGas({
+        from: account.address,
+        to: CONTRACT_ADDRESS,
+        data,
+    });
+    const gasPrice = await web3.eth.getGasPrice();
+    const nonce = await web3.eth.getTransactionCount(account.address, 'latest');
+
+    const signedTx = await web3.eth.accounts.signTransaction(
+        { nonce, from: account.address, to: CONTRACT_ADDRESS, data, gas, gasPrice },
+        FORMATTED_PRIVATE_KEY
+    );
+    return await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+};
+
+const getFedJobAdapters = async (jobId) => {
+    const result = await contract.methods.getFedJobAdapters(jobId).call();
+    return {
+        contributors: result.contributorList,
+        adapterCIDs: result.adapterCIDs,
+    };
+};
+
+const getFedJobDetails = async (jobId) => {
+    const d = await contract.methods.getFedJobDetails(jobId).call();
+    return {
+        datasetCID:        d.datasetCID,
+        metadataCID:       d.metadataCID,
+        modelName:         d.modelName,
+        requester:         d.requester,
+        maxContributors:   Number(d.maxContributors),
+        submittedCount:    Number(d.submittedCount),
+        contributorCount:  Number(d.contributorCount),
+        stakeAmount:       web3.utils.fromWei(d.stakeAmount, 'ether'),
+        isCompleted:       d.isCompleted,
+        mergedAdapterCID:  d.mergedAdapterCID,
+    };
+};
+
+export { createJob, acceptJob, deleteJob, cancelJob, completeJob, getJobDetails, acceptFederatedJob, submitAdapter, completeFederatedJob, getFedJobAdapters, getFedJobDetails };
