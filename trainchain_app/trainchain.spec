@@ -107,7 +107,7 @@ a = Analysis(
         # Heavy ML libs are intentionally NOT frozen — they live in the
         # uv-managed .trainchain_env/ venv instead.
         "torch", "ultralytics", "transformers", "numpy", "cv2",
-        "peft", "datasets", "accelerate", "safetensors", "sentencepiece",
+        "peft", "datasets", "accelerate", "safetensors", "sentencepiece", "web3"
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
