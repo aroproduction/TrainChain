@@ -11,6 +11,7 @@ import os
 import shutil
 import threading
 import traceback
+import subprocess
 
 import requests
 from dotenv import load_dotenv
@@ -177,4 +178,24 @@ if __name__ == "__main__":
     print(f"[server] Aggregation microservice starting on port {port}")
     print(f"[server] Backend URL: {BACKEND_URL}")
     print(f"[server] Work dir:    {WORK_DIR}")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    
+    ngrok_process = None
+    try:
+        print("[server] Starting ngrok tunnel...")
+        ngrok_process = subprocess.Popen(
+            ["ngrok", "http", str(port), "--url", "https://efficaciously-umbiliform-hermine.ngrok-free.dev"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print("[server] ngrok tunnel started at https://efficaciously-umbiliform-hermine.ngrok-free.dev")
+    except Exception as e:
+        print(f"[server] Failed to start ngrok: {e}")
+
+    try:
+        app.run(host="0.0.0.0", port=port, debug=False)
+    finally:
+        if ngrok_process:
+            print("[server] Stopping ngrok tunnel...")
+            ngrok_process.terminate()
+            ngrok_process.wait()
+            print("[server] ngrok tunnel stopped.")
