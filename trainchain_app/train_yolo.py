@@ -229,8 +229,14 @@ def main():
         epochs      = int(job.get("epochs", 100))
         imgsz       = int(job.get("imgsz", 640))
         num_classes = int(job.get("num_classes", 1))
-        # classes field is a comma-separated string e.g. "no_mask, mask"
-        classes     = [c.strip() for c in str(job.get("classes", "object")).split(",")]
+        # classes may arrive as a list (Postgres array → JSON array) or a legacy comma-separated string
+        raw_classes = job.get("classes", "object")
+        if isinstance(raw_classes, list):
+            classes = [str(c).strip() for c in raw_classes if str(c).strip()]
+        else:
+            classes = [c.strip() for c in str(raw_classes).split(",") if c.strip()]
+        if not classes:
+            classes = ["object"]
 
         # 2. Download + unzip
         extract_dir = download_dataset(api_url, args.job_id, work_dir)

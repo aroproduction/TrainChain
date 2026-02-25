@@ -36,3 +36,7 @@ coverage/
 
 #Ignore the python virtual environment
 .venv/
+
+fed_experiment
+docs
+sample_data

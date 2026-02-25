@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react"
 import axios from "axios"
-import { createJob as createJobOnChain } from "../../../utils/contract"
+import { createJob as createJobOnChain, createFederatedJob as createFederatedJobOnChain } from "../../../utils/contract"
 import { useToast } from "../../context/ToastContext"
 import LoadingModal from "../../components/LoadingModal"
 
@@ -64,6 +64,7 @@ export default function MyJobsTab() {
   const jobTypeIcons = {
     training: <BrainCircuit size={22} className="text-purple-600" />,
     data_processing: <Database size={22} className="text-blue-600" />,
+    llm_finetune: <BrainCircuit size={22} className="text-blue-600" />,
     default: <Folder size={22} className="text-gray-600" />,
   }
 
@@ -124,24 +125,42 @@ export default function MyJobsTab() {
       )
       const info = res.data
 
-      // Call blockchain createJob
-      const tx = await createJobOnChain(
-        info.id,
-        info.folder_name || `dataset_${info.id}`,
-        info.folder_cid,
-        info.metadata_cid,
-        info.job_type || "image_classification",
-        info.model || "yolo v11",
-        info.reward.toString()
-      )
+      let tx
+      if (info.job_type === "llm_finetune") {
+        // Federated LLM finetune job
+        tx = await createFederatedJobOnChain(
+          info.id,
+          info.folder_cid,
+          info.metadata_cid,
+          info.model_name,
+          parseInt(info.max_contributors),
+          String(info.reward)
+        )
+        if (tx) {
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/jobs/llm/confirm/${jobId}`
+          )
+        }
+      } else {
+        // Standard image-processing job
+        tx = await createJobOnChain(
+          info.id,
+          info.folder_name || `dataset_${info.id}`,
+          info.folder_cid,
+          info.metadata_cid,
+          info.job_type || "image_classification",
+          info.model || "yolo v11",
+          info.reward.toString()
+        )
+        if (tx) {
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/jobs/confirm/${jobId}`
+          )
+        }
+      }
 
       if (tx) {
-        // Confirm in backend (unconfirmed → pending)
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/jobs/confirm/${jobId}`
-        )
         toast.success("Payment successful! Job is now listed.")
-        // Refresh the list
         setRequests((prev) =>
           prev.map((r) => (r.id === jobId ? { ...r, status: "pending" } : r))
         )
@@ -158,8 +177,12 @@ export default function MyJobsTab() {
   const handleDeleteUnconfirmed = async (jobId) => {
     setActionLoading(jobId)
     try {
+      const job = requests.find((r) => r.id === jobId)
+      const isLlm = job?.job_type === "llm_finetune"
       await axios.delete(
-        `${import.meta.env.VITE_API_URL}/jobs/delete/${jobId}`
+        isLlm
+          ? `${import.meta.env.VITE_API_URL}/jobs/llm/delete/${jobId}`
+          : `${import.meta.env.VITE_API_URL}/jobs/delete/${jobId}`
       )
       toast.success("Job deleted successfully.")
       setRequests((prev) => prev.filter((r) => r.id !== jobId))
@@ -465,6 +488,22 @@ export default function MyJobsTab() {
                               {new Date(request.created_at).toLocaleString()}
                             </p>
                           </div>
+                          {request.job_type === "llm_finetune" && (
+                            <>
+                              <div className="space-y-1">
+                                <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Base Model</p>
+                                <p className="text-gray-800 text-sm bg-white px-3 py-2 rounded-lg">
+                                  {request.model_name || "—"}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Contributors</p>
+                                <p className="text-gray-800 text-sm bg-white px-3 py-2 rounded-lg">
+                                  {request.filled_slots ?? 0} / {request.max_contributors ?? "—"}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap gap-3 pt-2">
@@ -519,7 +558,7 @@ export default function MyJobsTab() {
                                   ) : (
                                     <>
                                       <FileDown size={16} className="mr-2" />
-                                      Download Trained Model
+                                      {request.job_type === "llm_finetune" ? "Download Adapter (LoRA)" : "Download Trained Model"}
                                     </>
                                   )}
                                 </button>

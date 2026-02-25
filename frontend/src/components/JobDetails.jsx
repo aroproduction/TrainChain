@@ -27,56 +27,55 @@ export default function JobDetails({ selectedJob, onBack }) {
   const toast = useToast();
   const [isApplying, setIsApplying] = useState(false);
 
+  const isLlmJob = selectedJob.job_type === "llm_finetune";
+
   const ApplyJobHandler = async () => {
     setIsApplying(true);
     try {
-      const initResponse = await axios.post(
-        `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/initiate`,
-        {
-          jobId: selectedJob.id,
-          contributorAddress: userAddress,
-        }
-      );
-
-      if (initResponse.status !== 200) {
-        throw new Error(
-          initResponse.data.message ||
-            "Failed to initiate job acceptance."
+      if (isLlmJob) {
+        /* ── LLM federated job flow ── */
+        // Backend reserves the slot AND calls acceptFederatedJob() on-chain (owner signs)
+        const initResponse = await axios.post(
+          `${import.meta.env.VITE_API_URL}/jobs/llm/accept-slot`,
+          { jobId: selectedJob.id, contributorAddress: userAddress }
         );
-      }
-
-      try {
-        const tx = await acceptJob(selectedJob.id);
-        const receipt = await tx.wait();
-
-        if (receipt.status !== 1) {
-          throw new Error("Transaction failed");
+        if (initResponse.status !== 200) {
+          throw new Error(initResponse.data.message || "Failed to reserve slot.");
+        }
+        toast.success("Slot accepted! Head to the contributor app to start training.");
+      } else {
+        /* ── Regular image-processing job flow ── */
+        const initResponse = await axios.post(
+          `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/initiate`,
+          { jobId: selectedJob.id, contributorAddress: userAddress }
+        );
+        if (initResponse.status !== 200) {
+          throw new Error(initResponse.data.message || "Failed to initiate job acceptance.");
         }
 
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/confirm`,
-          { jobId: selectedJob.id }
-        );
-
-        toast.success("Job application successful!");
-      } catch (blockchainError) {
         try {
+          const tx = await acceptJob(selectedJob.id);
+          const receipt = await tx.wait();
+          if (receipt.status !== 1) throw new Error("Transaction failed");
+
           await axios.post(
-            `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/revert`,
+            `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/confirm`,
             { jobId: selectedJob.id }
           );
-        } catch {}
-
-        toast.error(
-          blockchainError.message ||
-            "Payment failed or cancelled."
-        );
+          toast.success("Job application successful!");
+        } catch (blockchainError) {
+          try {
+            await axios.post(
+              `${import.meta.env.VITE_API_URL}/jobs/contributor/apply/revert`,
+              { jobId: selectedJob.id }
+            );
+          } catch {}
+          toast.error(blockchainError.message || "Payment failed or cancelled.");
+        }
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to apply for job."
+        error.response?.data?.message || error.message || "Failed to apply for job."
       );
     } finally {
       setIsApplying(false);
@@ -186,6 +185,34 @@ export default function JobDetails({ selectedJob, onBack }) {
             />
           )}
         </div>
+
+        {/* LLM Finetune Details */}
+        {isLlmJob && selectedJob.model_name && (
+          <>
+            <div className="border-t border-gray-200 mt-6 mb-6" />
+
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <FileText size={18} className="text-gray-600" />
+                <p className="font-medium text-gray-800">LLM Finetune Details</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <DetailBox label="Base Model" value={selectedJob.model_name} />
+                {selectedJob.max_contributors && (
+                  <DetailBox
+                    label="Slots"
+                    value={`${selectedJob.filled_slots ?? 0} / ${selectedJob.max_contributors} filled`}
+                  />
+                )}
+                <DetailBox
+                  label="Per-Contributor Reward"
+                  value={`${((parseFloat(selectedJob.reward) * 0.9) / (parseInt(selectedJob.max_contributors) || 1)).toFixed(4)} POL`}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Additional */}
         {(selectedJob.model ||

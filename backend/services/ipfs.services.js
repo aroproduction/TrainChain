@@ -103,3 +103,34 @@ export const downloadFolderAsZip = async (folderCid) => {
     throw new Error(`Error fetching zip file: ${error.message}`);
   }
 };
+
+/**
+ * Upload a single file buffer directly to Pinata without any re-zipping.
+ * Used by uploadAdapterController so the aggregation service can extract
+ * adapter_model.safetensors straight from the top-level of the ZIP.
+ */
+export const uploadRawFile = async (fileName, fileBuffer, mimeType = 'application/zip') => {
+  if (!process.env.PINATA_API_Key || !process.env.PINATA_API_Secret) {
+    throw new Error('Pinata API key or secret not set');
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileBuffer, { filename: fileName, contentType: mimeType });
+
+  const response = await axios.post(
+    'https://api.pinata.cloud/pinning/pinFileToIPFS',
+    formData,
+    {
+      headers: {
+        pinata_api_key:        process.env.PINATA_API_Key,
+        pinata_secret_api_key: process.env.PINATA_API_Secret,
+        ...formData.getHeaders(),
+      },
+      maxBodyLength: Infinity,
+    }
+  );
+
+  const cid = response.data.IpfsHash;
+  console.log(`[ipfs] uploadRawFile ${fileName} -> ${cid}`);
+  return cid;
+};

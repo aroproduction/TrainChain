@@ -62,7 +62,15 @@ export default function MyContributionsTab() {
   const completedCount = jobs.filter((j) => j.status === "completed").length
   const totalEarned = jobs
     .filter((j) => j.status === "completed")
-    .reduce((sum, j) => sum + parseFloat(j.reward || 0) * 0.9, 0)
+    .reduce((sum, j) => {
+      const reward = parseFloat(j.reward || 0)
+      if (j.job_type === "llm_finetune") {
+        // reward is the total stake; each contributor earns their share
+        const slots = parseInt(j.max_contributors) || 1
+        return sum + (reward * 0.9) / slots
+      }
+      return sum + reward * 0.9
+    }, 0)
 
   const filtered = jobs.filter((j) => {
     if (!searchQuery) return true

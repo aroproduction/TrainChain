@@ -43,6 +43,7 @@ const jobTypeIcons = {
   "sentiment-analysis": "😊",
   "language-model": "💬",
   "reinforcement-learning": "🎮",
+  llm_finetune: "🧠",
   default: "🤖",
 }
 

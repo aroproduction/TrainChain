@@ -11,6 +11,7 @@ const pool = new Pool({
     rejectUnauthorized: false, // required for SSL connection
     sslmode: "require",
   }
+  // ssl: false, // Disable SSL for local development (Ganache + local PostgreSQL)
 });
 
 // Check the connection
