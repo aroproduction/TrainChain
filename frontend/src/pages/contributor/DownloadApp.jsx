@@ -46,7 +46,7 @@ export default function DownloadAppTab() {
                   </div>
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold">TrainChain Desktop</h2>
-                    <p className="text-green-200">v1.2 • Windows</p>
+                    <p className="text-green-200">v1.3 • Windows</p>
                   </div>
                 </div>
                 <p className="text-green-100 mb-8 text-base leading-relaxed">
@@ -55,7 +55,7 @@ export default function DownloadAppTab() {
                   rewards by training AI models for requesters.
                 </p>
                 <motion.a
-                  href="https://github.com/aroproduction/TrainChain/releases/download/v1.2/TrainChain-Setup.exe"
+                  href="https://github.com/aroproduction/TrainChain/releases/download/v1.3/TrainChain-Setup.exe"
                   download
                   target="_blank"
                   rel="noopener noreferrer"
