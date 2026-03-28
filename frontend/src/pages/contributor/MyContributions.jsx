@@ -65,10 +65,11 @@ export default function MyContributionsTab() {
     .reduce((sum, j) => {
       const reward = parseFloat(j.reward || 0)
       if (j.job_type === "llm_finetune") {
-        // reward is the total stake; each contributor earns their share
+        // For LLM jobs: reward is total stake, each contributor gets (reward * 0.9 / max_contributors)
         const slots = parseInt(j.max_contributors) || 1
         return sum + (reward * 0.9) / slots
       }
+      // For image processing: contributor gets 90% of the reward
       return sum + reward * 0.9
     }, 0)
 
@@ -208,7 +209,10 @@ export default function MyContributionsTab() {
           filtered.map((job, index) => {
             const cfg = statusConfig[job.status] || statusConfig.pending
             const StatusIcon = cfg.icon
-            const earning = parseFloat(job.reward || 0) * 0.9
+            // For LLM jobs: (reward * 0.9 / max_contributors), else: reward * 0.9
+            const earning = job.job_type === 'llm_finetune' && job.max_contributors
+              ? parseFloat(job.reward || 0) * 0.9 / job.max_contributors
+              : parseFloat(job.reward || 0) * 0.9
             return (
               <motion.div
                 key={job.id}

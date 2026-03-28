@@ -4,25 +4,28 @@ dotenv.config();
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// Create a new Pool instance
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
   ssl: {
-    rejectUnauthorized: false, // required for SSL connection
+    rejectUnauthorized: false,
     sslmode: "require",
-  }
-  // ssl: false, // Disable SSL for local development (Ganache + local PostgreSQL)
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Check the connection
 export const connectToDB = async () => {
+  let client;
   try {
-    const res = await pool.query("SELECT NOW()");  // This query returns the current timestamp from the database
+    client = await pool.connect();
+    const res = await client.query("SELECT NOW()");
     console.log("Database connected successfully:", res.rows[0]);
   } catch (err) {
     console.error("Database connection error:", err);
+  } finally {
+    if (client) client.release();
   }
 };
 
-// Export pool to be used elsewhere
 export default pool;

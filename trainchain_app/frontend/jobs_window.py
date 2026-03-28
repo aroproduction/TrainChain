@@ -1,9 +1,6 @@
 # jobs_window.py
 """
 Jobs window for TrainChain contributor app.
-
-Docker dependency removed (Phase 4.3).
-Training now runs inside the uv-managed venv via train_yolo.py.
 """
 
 import sys
@@ -16,8 +13,16 @@ from pathlib import Path
 
 import requests
 from PyQt6.QtWidgets import (
-    QMainWindow, QLabel, QVBoxLayout, QWidget, QApplication,
-    QPushButton, QProgressBar, QRadioButton, QGroupBox, QMessageBox,
+    QMainWindow,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+    QApplication,
+    QPushButton,
+    QProgressBar,
+    QRadioButton,
+    QGroupBox,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 from PyQt6.QtGui import QFont
@@ -30,9 +35,9 @@ sys.path.insert(0, str(_ROOT))
 from env_setup import get_python_bin, ENV_DIR, load_api_url  # noqa: E402
 
 # Absolute path to train_yolo.py shipped with the app
-_TRAIN_YOLO  = _ROOT / "train_yolo.py"
-_TRAIN_LLM   = _ROOT / "training" / "train_llm.py"
-_SPEC_CHECK  = _ROOT / "training" / "spec_check.py"
+_TRAIN_YOLO = _ROOT / "train_yolo.py"
+_TRAIN_LLM = _ROOT / "training" / "train_llm.py"
+_SPEC_CHECK = _ROOT / "training" / "spec_check.py"
 
 # API base URL — read from .env, falls back to production
 _API_URL = load_api_url()
@@ -47,7 +52,8 @@ def _write_log(text: str) -> None:
     try:
         with open(_LOG_FILE, "a", encoding="utf-8") as f:
             import datetime
-            f.write(f"\n{'='*60}\n{datetime.datetime.now().isoformat()}\n{text}\n")
+
+            f.write(f"\n{'=' * 60}\n{datetime.datetime.now().isoformat()}\n{text}\n")
     except Exception:
         pass  # never crash the UI trying to write a log
 
@@ -56,8 +62,11 @@ def _write_training_log(lines: list[str], job_id: str) -> None:
     """Write the full training subprocess output to trainchain_training.log."""
     try:
         import datetime
+
         with open(_TRAINING_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"\n{'='*60}\n{datetime.datetime.now().isoformat()}  job_id={job_id}\n")
+            f.write(
+                f"\n{'=' * 60}\n{datetime.datetime.now().isoformat()}  job_id={job_id}\n"
+            )
             f.write("\n".join(lines))
             f.write("\n")
     except Exception:
@@ -68,14 +77,17 @@ def _write_training_log(lines: list[str], job_id: str) -> None:
 # Qt signal helper (thread → main-thread UI updates)
 # ---------------------------------------------------------------------------
 
+
 class _Signals(QObject):
-    log        = pyqtSignal(str)
-    done       = pyqtSignal(bool, str)   # success, message
+    log = pyqtSignal(str)
+    done = pyqtSignal(bool, str)  # success, message
     spec_check = pyqtSignal(bool, str)  # passed, display_message
+
 
 # ---------------------------------------------------------------------------
 # JobsPage
 # ---------------------------------------------------------------------------
+
 
 class JobsPage(QMainWindow):
     def __init__(self, wallet_address: str):
@@ -85,16 +97,18 @@ class JobsPage(QMainWindow):
         self.setGeometry(100, 100, 620, 460)
         self.setMinimumSize(530, 480)
 
-        self.job_id    = None
-        self.job_type  = None
-        self.use_gpu   = True
+        self.job_id = None
+        self.job_type = None
+        self.use_gpu = True
         self._job_data = {}
 
         self._signals = _Signals()
         self._signals.log.connect(self._on_log)
         self._signals.done.connect(self._on_done)
         self._signals.spec_check.connect(self._on_spec_check_done)
-        self._training_process: subprocess.Popen | None = None  # tracked for cancellation
+        self._training_process: subprocess.Popen | None = (
+            None  # tracked for cancellation
+        )
 
         container = QWidget()
         self.layout = QVBoxLayout()
@@ -122,7 +136,9 @@ class JobsPage(QMainWindow):
         self.refresh_button.setFixedSize(220, 38)
         self.refresh_button.clicked.connect(self.fetch_job_details)
         self.refresh_button.setVisible(False)
-        self.layout.addWidget(self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(
+            self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter
+        )
 
         self.hardware_group = QGroupBox("Select Hardware")
         self.hardware_group.setFont(QFont("Helvetica", 11))
@@ -268,7 +284,7 @@ class JobsPage(QMainWindow):
                 data = response.json()
                 if "id" in data:
                     self._job_data = data
-                    self.job_id   = data.get("id")
+                    self.job_id = data.get("id")
                     self.job_type = data.get("job_type")
                     self.label.setText(
                         f"Wallet: {self.wallet_address}\n"
@@ -290,18 +306,29 @@ class JobsPage(QMainWindow):
                 slot = llm_res.json()
                 if slot and "job_id" in slot:
                     self._job_data = slot
-                    self.job_id    = slot.get("job_id")
-                    self.job_type  = "llm_finetune"
+                    self.job_id = slot.get("job_id")
+                    self.job_type = "llm_finetune"
 
                     # Already submitted — training complete
-                    if slot.get("slot_status") == "submitted" or slot.get("adapter_cid"):
-                        self.label.setText(
-                            f"Wallet: {self.wallet_address}\n"
-                            f"Job ID: {self.job_id}\n"
-                            f"Model: {slot.get('model_name', 'N/A')}\n"
-                            f"\u2705 LoRA adapter submitted successfully! "
-                            f"Waiting for aggregation to complete."
-                        )
+                    if slot.get("slot_status") == "submitted" or slot.get(
+                        "adapter_cid"
+                    ):
+                        job_status = slot.get("job_status", "")
+                        if job_status == "completed":
+                            self.label.setText(
+                                f"Wallet: {self.wallet_address}\n"
+                                f"Job ID: {self.job_id}\n"
+                                f"Model: {slot.get('model_name', 'N/A')}\n"
+                                f"\u2705 Training and aggregation complete! Job finished."
+                            )
+                        else:
+                            self.label.setText(
+                                f"Wallet: {self.wallet_address}\n"
+                                f"Job ID: {self.job_id}\n"
+                                f"Model: {slot.get('model_name', 'N/A')}\n"
+                                f"\u2705 LoRA adapter submitted successfully! "
+                                f"Waiting for aggregation to complete."
+                            )
                         self.hardware_group.setVisible(False)
                         self.start_button.setVisible(False)
                         return
@@ -332,7 +359,9 @@ class JobsPage(QMainWindow):
                     )
                     self.hardware_group.setVisible(True)
                     self.start_button.setVisible(True)
-                    self.start_button.setEnabled(False)  # disabled until spec check passes
+                    self.start_button.setEnabled(
+                        False
+                    )  # disabled until spec check passes
                     # Run spec check in background so UI stays responsive
                     threading.Thread(
                         target=self._run_spec_check,
@@ -342,9 +371,7 @@ class JobsPage(QMainWindow):
                     return
 
             # ── 3. Nothing found ──────────────────────────────────────────────
-            self.label.setText(
-                f"Wallet: {self.wallet_address}\nNo jobs available."
-            )
+            self.label.setText(f"Wallet: {self.wallet_address}\nNo jobs available.")
         except requests.RequestException as exc:
             self.label.setText(f"Request failed: {exc}")
 
@@ -387,9 +414,12 @@ class JobsPage(QMainWindow):
         cmd = [
             str(python_bin),
             str(_TRAIN_YOLO),
-            "--job-id",             str(self.job_id),
-            "--api-url",            _API_URL,
-            "--contributor-wallet", self.wallet_address,
+            "--job-id",
+            str(self.job_id),
+            "--api-url",
+            _API_URL,
+            "--contributor-wallet",
+            self.wallet_address,
         ]
 
         hardware = "GPU" if self.use_gpu else "CPU"
@@ -441,10 +471,7 @@ class JobsPage(QMainWindow):
                 )
         except Exception as exc:
             self._kill_training()
-            self._signals.done.emit(
-                False,
-                f"{exc}\n\n{traceback.format_exc()}"
-            )
+            self._signals.done.emit(False, f"{exc}\n\n{traceback.format_exc()}")
 
     # ── LLM: hardware spec check ──────────────────────────────────────────
 
@@ -503,9 +530,12 @@ class JobsPage(QMainWindow):
 
             proc = subprocess.run(
                 [
-                    str(python_bin), str(_SPEC_CHECK),
-                    "--model-name", model_name,
-                    "--disk-path",  str(_ROOT),
+                    str(python_bin),
+                    str(_SPEC_CHECK),
+                    "--model-name",
+                    model_name,
+                    "--disk-path",
+                    str(_ROOT),
                 ],
                 capture_output=True,
                 text=True,
@@ -521,11 +551,11 @@ class JobsPage(QMainWindow):
                 )
                 return
 
-            result   = json.loads(stdout)
-            errors   = result.get("errors",   [])
+            result = json.loads(stdout)
+            errors = result.get("errors", [])
             warnings = result.get("warnings", [])
-            vram_gb  = result.get("vram_gb")
-            ram_gb   = result.get("ram_gb", 0)
+            vram_gb = result.get("vram_gb")
+            ram_gb = result.get("ram_gb", 0)
 
             if result["ok"]:
                 parts = []
@@ -568,9 +598,12 @@ class JobsPage(QMainWindow):
         cmd = [
             str(python_bin),
             str(_TRAIN_LLM),
-            "--job-id",             str(self.job_id),
-            "--api-url",            _API_URL,
-            "--contributor-wallet", self.wallet_address,
+            "--job-id",
+            str(self.job_id),
+            "--api-url",
+            _API_URL,
+            "--contributor-wallet",
+            self.wallet_address,
         ]
 
         hardware = "GPU" if self.use_gpu else "CPU"

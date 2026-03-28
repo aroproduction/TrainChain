@@ -147,7 +147,11 @@ function JobCard({ job, onClick }) {
             className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full font-medium w-[40%]"
           >
             <Award size={14} />
-            <span>{Number(job.reward || 0).toFixed(3)} POL</span>
+            <span>{Number(
+              job.job_type === 'llm_finetune' && job.max_contributors
+                ? (parseFloat(job.reward || 0) * 0.9 / job.max_contributors)
+                : (parseFloat(job.reward || 0) * 0.9)
+            ).toFixed(3)} POL</span>
           </motion.div>
         </div>
       </div>

@@ -55,12 +55,22 @@ export default function EarningsTab() {
   const completedJobs = jobs.filter((j) => j.status === "completed")
   const pendingJobs = jobs.filter((j) => j.status === "in_progress")
 
-  const totalEarned = completedJobs.reduce(
-    (sum, j) => sum + parseFloat(j.reward || 0) * 0.9, 0
-  )
-  const totalPending = pendingJobs.reduce(
-    (sum, j) => sum + parseFloat(j.reward || 0) * 0.9, 0
-  )
+  // For LLM jobs: each contributor gets (reward * 0.9 / max_contributors)
+  // For image processing: contributor gets reward * 0.9
+  const totalEarned = completedJobs.reduce((sum, j) => {
+    const reward = parseFloat(j.reward || 0)
+    if (j.job_type === 'llm_finetune' && j.max_contributors) {
+      return sum + (reward * 0.9) / j.max_contributors
+    }
+    return sum + reward * 0.9
+  }, 0)
+  const totalPending = pendingJobs.reduce((sum, j) => {
+    const reward = parseFloat(j.reward || 0)
+    if (j.job_type === 'llm_finetune' && j.max_contributors) {
+      return sum + (reward * 0.9) / j.max_contributors
+    }
+    return sum + reward * 0.9
+  }, 0)
 
   const filtered = jobs.filter((j) => {
     if (!searchQuery) return true
@@ -241,7 +251,10 @@ export default function EarningsTab() {
         ) : (
           filtered.map((job, index) => {
             const isCompleted = job.status === "completed"
-            const earning = parseFloat(job.reward || 0) * 0.9
+            // For LLM jobs: (reward * 0.9 / max_contributors), else: reward * 0.9
+            const earning = job.job_type === 'llm_finetune' && job.max_contributors
+              ? parseFloat(job.reward || 0) * 0.9 / job.max_contributors
+              : parseFloat(job.reward || 0) * 0.9
             return (
               <motion.div
                 key={job.id}

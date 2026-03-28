@@ -527,7 +527,7 @@ export const submitLlmAdapter = async (jobId, contributorAddress, adapterCid, tx
 /**
  * Return the contributor's active LLM slot with full training params.
  * Returns null if no active slot exists.
- * "Active" = slot status is 'accepted' or 'submitted' and job is in_progress/aggregating.
+ * "Active" = slot status is 'accepted' or 'submitted' and job is pending/in_progress/aggregating/completed.
  */
 export const getMyLlmSlot = async (contributorAddress) => {
     try {
@@ -542,7 +542,7 @@ export const getMyLlmSlot = async (contributorAddress) => {
              JOIN llm_finetune_jobs lf ON lf.job_id = ls.job_id
              WHERE LOWER(ls.contributor_address) = LOWER($1)
                AND ls.status IN ('accepted', 'submitted')
-               AND j.status IN ('in_progress', 'aggregating', 'completed')
+               AND j.status IN ('pending', 'in_progress', 'aggregating', 'completed')
              ORDER BY ls.accepted_at DESC
              LIMIT 1`,
             [contributorAddress]
