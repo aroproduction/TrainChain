@@ -20,7 +20,7 @@
 [Setup]
 AppId={{A7F3C2E1-84B0-4D2A-9F6E-3C1D5B8E0F27}
 AppName=TrainChain
-AppVersion=1.3.0
+AppVersion=1.3.1
 AppPublisher=TrainChain
 AppPublisherURL=https://github.com/aroproduction/TrainChain
 AppSupportURL=https://github.com/aroproduction/TrainChain/issues
