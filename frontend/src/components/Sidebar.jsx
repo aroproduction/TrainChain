@@ -19,6 +19,7 @@ import {
   Layers,
   Award,
   Monitor,
+  Users,
 } from 'lucide-react';
 import { UserContext } from '../context/UserContext';
 import logo from '../assets/TrainChain_logo.png';
@@ -41,6 +42,7 @@ const requesterSidebarItems = [
 const contributorSidebarItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/home', tab: null },
   { label: 'Available Jobs', icon: Search, path: '/contributor', tab: 'available-jobs' },
+  { label: 'Contributor Pool', icon: Users, path: '/contributor/pool', tab: null },
   { label: 'My Contributions', icon: Layers, path: '/contributor', tab: 'my-contributions' },
   { label: 'Earnings', icon: DollarSign, path: '/contributor', tab: 'earnings' },
   { label: 'Wallet', icon: Wallet, path: '/contributor', tab: 'wallet' },

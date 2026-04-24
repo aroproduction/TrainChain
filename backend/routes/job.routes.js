@@ -1,7 +1,7 @@
 import express from "express";
 import { query, body, param } from "express-validator";
 import multer from "multer";
-import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs, confirmJobController, deleteUnconfirmedJobController, retryInfoController, jobApplyInitiate, jobApplyConfirm, jobApplyRevert, acceptLlmSlotController, getLlmShardController, getLlmJobsController, uploadLlmFinetuneJob, confirmLlmJobController, deleteLlmJobController, submitAdapterController, getLlmRequesterJobsController, getLlmSlotsController, finalizeLlmJobController, aggregationFailedController, getMyLlmSlotController, uploadAdapterController, } from "../controllers/job.controller.js";
+import { uploadImageProcessingJob, getDataset, getJobsController, getImageProcessingJobDetails, uploadModelController, getRequesterRequests, getModel, jobApply, getContributorJob, getContributorAllJobs, confirmJobController, deleteUnconfirmedJobController, retryInfoController, jobApplyInitiate, jobApplyConfirm, jobApplyRevert, acceptLlmSlotController, getLlmShardController, getLlmJobsController, uploadLlmFinetuneJob, confirmLlmJobController, deleteLlmJobController, submitAdapterController, getLlmRequesterJobsController, getLlmSlotsController, finalizeLlmJobController, aggregationFailedController, getMyLlmSlotController, uploadAdapterController, getContributorPoolController, getContributorProfileController, getContributorHistoryController, getContributorRatingsController, createContributorRatingController } from "../controllers/job.controller.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -162,6 +162,23 @@ router.get(
     '/llm/my-requests',
     query('requesterAddress').notEmpty().withMessage('requesterAddress is required'),
     getLlmRequesterJobsController
+);
+
+// Contributor pool and reputation views
+router.get('/contributors/pool', getContributorPoolController);
+router.get('/contributors/:walletAddress', getContributorProfileController);
+router.get('/contributors/:walletAddress/history', getContributorHistoryController);
+router.get('/contributors/:walletAddress/ratings', getContributorRatingsController);
+router.post(
+    '/contributors/rate',
+    [
+        body('jobId').isInt().withMessage('jobId must be an integer'),
+        body('requesterAddress').notEmpty().withMessage('requesterAddress is required'),
+        body('contributorAddress').notEmpty().withMessage('contributorAddress is required'),
+        body('rating').isInt({ min: 1, max: 5 }).withMessage('rating must be between 1 and 5'),
+        body('review').optional({ nullable: true }).isString().withMessage('review must be a string'),
+    ],
+    createContributorRatingController
 );
 
 // Used by aggregation microservice

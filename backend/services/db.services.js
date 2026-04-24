@@ -104,6 +104,26 @@ export const updateTrainedJobModel = async (jobId, modelCid) => {
             `UPDATE jobs SET trained_model_cid = $1 WHERE id = $2 RETURNING *`,
             [modelCid, jobId]
         );
+
+        const jobRow = result.rows[0];
+        if (jobRow?.contributor_address) {
+            try {
+                await recordContributorContribution({
+                    jobId: jobRow.id,
+                    contributorAddress: jobRow.contributor_address,
+                    requesterAddress: jobRow.requester_address,
+                    jobType: jobRow.job_type,
+                    contributionStatus: 'completed',
+                    rewardEarned: Number(jobRow.reward ?? 0),
+                    completedAt: new Date(),
+                });
+                await recordContributionCompletion(jobRow.contributor_address, Number(jobRow.reward ?? 0));
+            } catch (historyError) {
+                console.error('Error syncing contributor completion stats:', historyError);
+            }
+        }
+
+        return jobRow;
     } catch (error) {
         console.error("Error uploading model:", error);
         return error;
@@ -174,7 +194,23 @@ export const updateContributor = async (jobId, contributorAddress) => {
             [contributorAddress, jobId]
         );
 
-        return result.rows[0];
+        const jobRow = result.rows[0];
+        if (jobRow?.contributor_address) {
+            try {
+                await recordContributorContribution({
+                    jobId: jobRow.id,
+                    contributorAddress: jobRow.contributor_address,
+                    requesterAddress: jobRow.requester_address,
+                    jobType: jobRow.job_type,
+                    contributionStatus: 'in_progress',
+                    rewardEarned: 0,
+                });
+            } catch (historyError) {
+                console.error('Error recording contributor assignment:', historyError);
+            }
+        }
+
+        return jobRow;
     } catch (error) {
         throw new Error("Error updating contributor:", error);
     }
@@ -257,6 +293,22 @@ export const initiateJobAcceptance = async (jobId, contributorAddress) => {
              RETURNING *`,
             [contributorAddress, jobId]
         );
+
+        const jobRow = result.rows[0];
+        if (jobRow?.contributor_address) {
+            try {
+                await recordContributorContribution({
+                    jobId: jobRow.id,
+                    contributorAddress: jobRow.contributor_address,
+                    requesterAddress: jobRow.requester_address,
+                    jobType: jobRow.job_type,
+                    contributionStatus: 'accepted',
+                    rewardEarned: 0,
+                });
+            } catch (historyError) {
+                console.error('Error recording job acceptance history:', historyError);
+            }
+        }
         return result.rows[0];
     } catch (error) {
         console.error("Error initiating job acceptance:", error);
@@ -271,6 +323,21 @@ export const confirmJobAcceptance = async (jobId) => {
             `UPDATE jobs SET status = 'in_progress' WHERE id = $1 AND status = 'contributor_unconfirmed' RETURNING *`,
             [jobId]
         );
+        const jobRow = result.rows[0];
+        if (jobRow?.contributor_address) {
+            try {
+                await recordContributorContribution({
+                    jobId: jobRow.id,
+                    contributorAddress: jobRow.contributor_address,
+                    requesterAddress: jobRow.requester_address,
+                    jobType: jobRow.job_type,
+                    contributionStatus: 'in_progress',
+                    rewardEarned: 0,
+                });
+            } catch (historyError) {
+                console.error('Error updating contributor progress history:', historyError);
+            }
+        }
         return result.rows[0];
     } catch (error) {
         console.error("Error confirming job acceptance:", error);
@@ -409,6 +476,7 @@ export const acceptLlmJobSlot = async (jobId, contributorAddress) => {
     const client = await db.connect();
     try {
         await client.query('BEGIN');
+        let historyPayload = null;
 
         // Check slot availability
         const countRes = await client.query(
@@ -433,6 +501,24 @@ export const acceptLlmJobSlot = async (jobId, contributorAddress) => {
             [jobId, contributorAddress.toLowerCase(), slotIndex]
         );
 
+        const jobResult = await client.query(
+            `SELECT j.requester_address, j.job_type, j.reward
+             FROM jobs j
+             WHERE j.id = $1`,
+            [jobId]
+        );
+        const jobRow = jobResult.rows[0];
+        if (jobRow) {
+            historyPayload = {
+                jobId,
+                contributorAddress,
+                requesterAddress: jobRow.requester_address,
+                jobType: jobRow.job_type,
+                contributionStatus: 'accepted',
+                rewardEarned: 0,
+            };
+        }
+
         // If all slots now filled, update master job status to in_progress
         if (slotIndex + 1 >= Number(max_contributors)) {
             await client.query(
@@ -442,6 +528,13 @@ export const acceptLlmJobSlot = async (jobId, contributorAddress) => {
         }
 
         await client.query('COMMIT');
+        if (historyPayload) {
+            try {
+                await recordContributorContribution(historyPayload);
+            } catch (historyError) {
+                console.error('Error recording accepted LLM slot history:', historyError);
+            }
+        }
         return slotRow.rows[0];
     } catch (error) {
         await client.query('ROLLBACK');
@@ -480,6 +573,7 @@ export const submitLlmAdapter = async (jobId, contributorAddress, adapterCid, tx
     const client = await db.connect();
     try {
         await client.query('BEGIN');
+        let historyPayload = null;
 
         const slotRes = await client.query(
             `UPDATE llm_contributor_slots
@@ -505,6 +599,25 @@ export const submitLlmAdapter = async (jobId, contributorAddress, adapterCid, tx
         const { max_contributors, submitted } = checkRes.rows[0];
         const allSubmitted = Number(submitted) >= Number(max_contributors);
 
+        const jobResult = await client.query(
+            `SELECT requester_address, job_type, reward
+             FROM jobs
+             WHERE id = $1`,
+            [jobId]
+        );
+        const jobRow = jobResult.rows[0];
+        if (jobRow) {
+            historyPayload = {
+                jobId,
+                contributorAddress,
+                requesterAddress: jobRow.requester_address,
+                jobType: jobRow.job_type,
+                contributionStatus: 'submitted',
+                rewardEarned: 0,
+                submittedAt: new Date(),
+            };
+        }
+
         if (allSubmitted) {
             // Transition master job to 'aggregating' — signals aggregation microservice
             await client.query(
@@ -514,6 +627,13 @@ export const submitLlmAdapter = async (jobId, contributorAddress, adapterCid, tx
         }
 
         await client.query('COMMIT');
+        if (historyPayload) {
+            try {
+                await recordContributorContribution(historyPayload);
+            } catch (historyError) {
+                console.error('Error recording submitted adapter history:', historyError);
+            }
+        }
         return { slot: slotRes.rows[0], allSubmitted };
     } catch (error) {
         await client.query('ROLLBACK');
@@ -562,6 +682,15 @@ export const finalizeLlmJob = async (jobId, mergedAdapterCid, aggregationLog) =>
     try {
         await client.query('BEGIN');
 
+        const slotsResult = await client.query(
+            `SELECT ls.contributor_address, ls.submitted_at, j.requester_address, j.reward, j.job_type
+             FROM llm_contributor_slots ls
+             JOIN jobs j ON j.id = ls.job_id
+             WHERE ls.job_id = $1`,
+            [jobId]
+        );
+        const slots = slotsResult.rows;
+
         await client.query(
             `UPDATE llm_finetune_jobs
              SET merged_adapter_cid = $1, aggregation_log = $2
@@ -577,6 +706,26 @@ export const finalizeLlmJob = async (jobId, mergedAdapterCid, aggregationLog) =>
         );
 
         await client.query('COMMIT');
+
+        try {
+            const jobReward = Number(slots[0]?.reward ?? 0);
+            const contributorReward = slots.length > 0 ? jobReward / slots.length : 0;
+            for (const slot of slots) {
+                await recordContributorContribution({
+                    jobId,
+                    contributorAddress: slot.contributor_address,
+                    requesterAddress: slot.requester_address,
+                    jobType: slot.job_type,
+                    contributionStatus: 'completed',
+                    rewardEarned: contributorReward,
+                    submittedAt: slot.submitted_at ?? null,
+                    completedAt: new Date(),
+                });
+                await recordContributionCompletion(slot.contributor_address, contributorReward);
+            }
+        } catch (historyError) {
+            console.error('Error syncing LLM contribution history after finalization:', historyError);
+        }
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error finalizing LLM job:', error);
@@ -598,6 +747,280 @@ export const getLlmJobSlots = async (jobId) => {
         return result.rows;
     } catch (error) {
         console.error('Error fetching LLM job slots:', error);
+        throw error;
+    }
+};
+
+const normalizeWalletAddress = (walletAddress) => (walletAddress ? walletAddress.toLowerCase() : null);
+
+const refreshContributorRatingStats = async (walletAddress) => {
+    const normalizedAddress = normalizeWalletAddress(walletAddress);
+    if (!normalizedAddress) {
+        return;
+    }
+
+    const summaryResult = await db.query(
+        `SELECT
+            COALESCE(ROUND(AVG(rating)::numeric, 2), 0) AS avg_rating,
+            COUNT(*)::integer AS rating_count
+         FROM contributor_ratings
+         WHERE LOWER(contributor_address) = LOWER($1)`,
+        [normalizedAddress]
+    );
+
+    const summary = summaryResult.rows[0] ?? { avg_rating: 0, rating_count: 0 };
+
+    await db.query(
+        `INSERT INTO contributor_profiles (wallet_address, avg_rating, rating_count, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (wallet_address) DO UPDATE SET
+            avg_rating = EXCLUDED.avg_rating,
+            rating_count = EXCLUDED.rating_count,
+            updated_at = NOW()`,
+        [normalizedAddress, summary.avg_rating, summary.rating_count]
+    );
+};
+
+export const recordContributorContribution = async ({
+    jobId,
+    contributorAddress,
+    requesterAddress = null,
+    jobType,
+    contributionStatus,
+    rewardEarned = 0,
+    submittedAt = null,
+    completedAt = null,
+}) => {
+    const normalizedContributor = normalizeWalletAddress(contributorAddress);
+    const normalizedRequester = normalizeWalletAddress(requesterAddress);
+
+    if (!jobId || !normalizedContributor || !jobType || !contributionStatus) {
+        throw new Error('jobId, contributorAddress, jobType, and contributionStatus are required');
+    }
+
+    try {
+        const result = await db.query(
+            `INSERT INTO contributor_contributions (
+                job_id,
+                contributor_address,
+                requester_address,
+                job_type,
+                contribution_status,
+                reward_earned,
+                submitted_at,
+                completed_at
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (job_id, contributor_address) DO UPDATE SET
+                requester_address = COALESCE(EXCLUDED.requester_address, contributor_contributions.requester_address),
+                job_type = EXCLUDED.job_type,
+                contribution_status = EXCLUDED.contribution_status,
+                reward_earned = EXCLUDED.reward_earned,
+                submitted_at = COALESCE(EXCLUDED.submitted_at, contributor_contributions.submitted_at),
+                completed_at = COALESCE(EXCLUDED.completed_at, contributor_contributions.completed_at)
+             RETURNING *`,
+            [
+                jobId,
+                normalizedContributor,
+                normalizedRequester,
+                jobType,
+                contributionStatus,
+                rewardEarned ?? 0,
+                submittedAt,
+                completedAt,
+            ]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error recording contributor contribution:', error);
+        throw error;
+    }
+};
+
+export const recordContributionCompletion = async (contributorAddress, rewardEarned = 0) => {
+    const normalizedAddress = normalizeWalletAddress(contributorAddress);
+    if (!normalizedAddress) {
+        return;
+    }
+
+    try {
+        await db.query(
+            `INSERT INTO contributor_profiles (
+                wallet_address,
+                total_jobs_completed,
+                total_earnings_eth,
+                last_contributed_at,
+                updated_at
+             ) VALUES ($1, 1, $2, NOW(), NOW())
+             ON CONFLICT (wallet_address) DO UPDATE SET
+                total_jobs_completed = contributor_profiles.total_jobs_completed + 1,
+                total_earnings_eth = contributor_profiles.total_earnings_eth + EXCLUDED.total_earnings_eth,
+                last_contributed_at = NOW(),
+                updated_at = NOW()`,
+            [normalizedAddress, rewardEarned ?? 0]
+        );
+    } catch (error) {
+        console.error('Error recording contributor completion stats:', error);
+        throw error;
+    }
+};
+
+export const getContributorPool = async () => {
+    try {
+        const result = await db.query(
+            `SELECT
+                wallet_address,
+                display_name,
+                gpu_model,
+                vram_gb,
+                ram_gb,
+                accepts_llm_jobs,
+                accepts_yolo_jobs,
+                total_jobs_completed,
+                total_earnings_eth,
+                avg_rating,
+                rating_count,
+                last_seen_at,
+                last_contributed_at,
+                created_at,
+                updated_at
+             FROM contributor_profiles
+             ORDER BY accepts_llm_jobs DESC,
+                      avg_rating DESC,
+                      total_jobs_completed DESC,
+                      last_seen_at DESC NULLS LAST,
+                      created_at DESC`
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching contributor pool:', error);
+        throw error;
+    }
+};
+
+export const getContributorProfileByAddress = async (walletAddress) => {
+    try {
+        const result = await db.query(
+            `SELECT *
+             FROM contributor_profiles
+             WHERE LOWER(wallet_address) = LOWER($1)
+             LIMIT 1`,
+            [walletAddress]
+        );
+        return result.rows[0] ?? null;
+    } catch (error) {
+        console.error('Error fetching contributor profile by address:', error);
+        throw error;
+    }
+};
+
+export const getContributorHistoryByAddress = async (walletAddress, limit = 10) => {
+    try {
+        const result = await db.query(
+            `SELECT
+                cc.*,
+                j.status AS job_status,
+                j.reward AS job_reward,
+                j.created_at AS job_created_at,
+                j.folder_name,
+                j.contributor_address AS job_contributor_address,
+                lf.model_name,
+                lf.max_contributors
+             FROM contributor_contributions cc
+             JOIN jobs j ON j.id = cc.job_id
+             LEFT JOIN llm_finetune_jobs lf ON lf.job_id = cc.job_id
+             WHERE LOWER(cc.contributor_address) = LOWER($1)
+             ORDER BY COALESCE(cc.completed_at, cc.submitted_at, cc.created_at) DESC
+             LIMIT $2`,
+            [walletAddress, limit]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching contributor history:', error);
+        throw error;
+    }
+};
+
+export const getContributorRatingsByAddress = async (walletAddress, limit = 10) => {
+    try {
+        const result = await db.query(
+            `SELECT *
+             FROM contributor_ratings
+             WHERE LOWER(contributor_address) = LOWER($1)
+             ORDER BY created_at DESC
+             LIMIT $2`,
+            [walletAddress, limit]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching contributor ratings:', error);
+        throw error;
+    }
+};
+
+export const createContributorRating = async ({ jobId, requesterAddress, contributorAddress, rating, review = null }) => {
+    const normalizedRequester = normalizeWalletAddress(requesterAddress);
+    const normalizedContributor = normalizeWalletAddress(contributorAddress);
+
+    if (!jobId || !normalizedRequester || !normalizedContributor || rating === undefined || rating === null) {
+        throw new Error('jobId, requesterAddress, contributorAddress, and rating are required');
+    }
+
+    try {
+        const result = await db.query(
+            `INSERT INTO contributor_ratings (
+                job_id,
+                requester_address,
+                contributor_address,
+                rating,
+                review
+             ) VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
+            [jobId, normalizedRequester, normalizedContributor, rating, review ?? null]
+        );
+
+        try {
+            await refreshContributorRatingStats(normalizedContributor);
+        } catch (summaryError) {
+            console.error('Error refreshing contributor rating summary:', summaryError);
+        }
+
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error creating contributor rating:', error);
+        throw error;
+    }
+};
+
+export const getContributorRatingSummary = async (walletAddress) => {
+    try {
+        const result = await db.query(
+            `SELECT
+                cp.wallet_address,
+                cp.display_name,
+                cp.total_jobs_completed,
+                cp.total_earnings_eth,
+                cp.avg_rating,
+                cp.rating_count,
+                cp.last_seen_at,
+                cp.last_contributed_at,
+                COALESCE(hist.contribution_count, 0) AS contribution_count,
+                COALESCE(hist.last_contribution_at, cp.last_contributed_at) AS last_contribution_at
+             FROM contributor_profiles cp
+             LEFT JOIN (
+                SELECT
+                    contributor_address,
+                    COUNT(*)::integer AS contribution_count,
+                    MAX(COALESCE(completed_at, submitted_at, created_at)) AS last_contribution_at
+                FROM contributor_contributions
+                GROUP BY contributor_address
+             ) hist ON LOWER(hist.contributor_address) = LOWER(cp.wallet_address)
+             WHERE LOWER(cp.wallet_address) = LOWER($1)
+             LIMIT 1`,
+            [walletAddress]
+        );
+        return result.rows[0] ?? null;
+    } catch (error) {
+        console.error('Error fetching contributor rating summary:', error);
         throw error;
     }
 };
@@ -646,7 +1069,13 @@ export const upsertContributorProfile = async (walletAddress, profileData = {}) 
 export const getAllContributorProfiles = async () => {
     try {
         const result = await db.query(
-            `SELECT * FROM contributor_profiles ORDER BY total_jobs_completed DESC, last_seen_at DESC`
+            `SELECT *
+             FROM contributor_profiles
+             ORDER BY accepts_llm_jobs DESC,
+                      avg_rating DESC,
+                      total_jobs_completed DESC,
+                      last_seen_at DESC NULLS LAST,
+                      created_at DESC`
         );
         return result.rows;
     } catch (error) {
@@ -661,12 +1090,19 @@ export const getAllContributorProfiles = async () => {
 export const incrementContributorStats = async (walletAddress, earningsEth) => {
     try {
         await db.query(
-            `UPDATE contributor_profiles
-             SET total_jobs_completed = total_jobs_completed + 1,
-                 total_earnings_eth   = total_earnings_eth + $1,
-                 updated_at           = NOW()
-             WHERE wallet_address = $2`,
-            [earningsEth, walletAddress.toLowerCase()]
+            `INSERT INTO contributor_profiles (
+                wallet_address,
+                total_jobs_completed,
+                total_earnings_eth,
+                last_contributed_at,
+                updated_at
+            ) VALUES ($1, 1, $2, NOW(), NOW())
+            ON CONFLICT (wallet_address) DO UPDATE SET
+                total_jobs_completed = contributor_profiles.total_jobs_completed + 1,
+                total_earnings_eth = contributor_profiles.total_earnings_eth + EXCLUDED.total_earnings_eth,
+                last_contributed_at = NOW(),
+                updated_at = NOW()`,
+            [walletAddress.toLowerCase(), earningsEth]
         );
     } catch (error) {
         console.error('Error incrementing contributor stats:', error);

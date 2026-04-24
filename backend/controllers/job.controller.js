@@ -1,6 +1,6 @@
 import { validationResult } from "express-validator";
 import { uploadFolderHandler, downloadFolderAsZip, uploadRawFile } from "../services/ipfs.services.js";
-import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor, getAllJobsByContributor, confirmJobCreation, deleteUnconfirmedJob, initiateJobAcceptance, confirmJobAcceptance, revertJobAcceptance, getRetryInfo, getLlmFinetuneJob, acceptLlmJobSlot, getLlmJobSlots, getPendingLlmJobs, createLlmFinetuneJob, submitLlmAdapter, finalizeLlmJob, deleteUnconfirmedLlmJob, getLlmJobsByRequester, markLlmJobFailed, getMyLlmSlot } from "../services/db.services.js";
+import { createJob, insert_image_processing_table, getJobById, getJobs, get_image_processing_job, updateTrainedJobModel, JobsByRequester, updateJobStatus, ContributorHasInProgressJob, updateContributor, getJobByContributor, getAllJobsByContributor, confirmJobCreation, deleteUnconfirmedJob, initiateJobAcceptance, confirmJobAcceptance, revertJobAcceptance, getRetryInfo, getLlmFinetuneJob, acceptLlmJobSlot, getLlmJobSlots, getPendingLlmJobs, createLlmFinetuneJob, submitLlmAdapter, finalizeLlmJob, deleteUnconfirmedLlmJob, getLlmJobsByRequester, markLlmJobFailed, getMyLlmSlot, getContributorPool, getContributorProfileByAddress, getContributorHistoryByAddress, getContributorRatingsByAddress, getContributorRatingSummary, createContributorRating } from "../services/db.services.js";
 import { completeJob, acceptFederatedJob, submitAdapter, completeFederatedJob } from "../utils/blockchain.js";
 import { shardDatasetForJob } from "../services/sharding.services.js";
 import axios from 'axios';
@@ -774,6 +774,127 @@ export const getLlmRequesterJobsController = async (req, res) => {
         res.status(200).json(jobs);
     } catch (error) {
         console.error('Error in getLlmRequesterJobsController:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * GET /jobs/contributors/pool
+ * Returns the contributor pool view ordered by availability and reputation.
+ */
+export const getContributorPoolController = async (req, res) => {
+    try {
+        const contributors = await getContributorPool();
+        res.status(200).json(contributors);
+    } catch (error) {
+        console.error('Error in getContributorPoolController:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * GET /jobs/contributors/:walletAddress
+ * Returns a contributor profile with recent history and rating summary.
+ */
+export const getContributorProfileController = async (req, res) => {
+    const { walletAddress } = req.params;
+    if (!walletAddress) {
+        return res.status(400).json({ message: 'walletAddress is required' });
+    }
+
+    try {
+        const profile = await getContributorProfileByAddress(walletAddress);
+        if (!profile) {
+            return res.status(404).json({ message: 'Contributor not found' });
+        }
+
+        const [history, ratings, summary] = await Promise.all([
+            getContributorHistoryByAddress(walletAddress, 10),
+            getContributorRatingsByAddress(walletAddress, 10),
+            getContributorRatingSummary(walletAddress),
+        ]);
+
+        res.status(200).json({
+            profile,
+            summary: summary ?? profile,
+            history,
+            ratings,
+        });
+    } catch (error) {
+        console.error('Error in getContributorProfileController:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * GET /jobs/contributors/:walletAddress/history
+ * Returns the latest contribution records for a contributor.
+ */
+export const getContributorHistoryController = async (req, res) => {
+    const { walletAddress } = req.params;
+    const limit = Number.parseInt(req.query.limit ?? '10', 10) || 10;
+
+    if (!walletAddress) {
+        return res.status(400).json({ message: 'walletAddress is required' });
+    }
+
+    try {
+        const history = await getContributorHistoryByAddress(walletAddress, limit);
+        res.status(200).json(history);
+    } catch (error) {
+        console.error('Error in getContributorHistoryController:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * GET /jobs/contributors/:walletAddress/ratings
+ * Returns the latest ratings left for a contributor.
+ */
+export const getContributorRatingsController = async (req, res) => {
+    const { walletAddress } = req.params;
+    const limit = Number.parseInt(req.query.limit ?? '10', 10) || 10;
+
+    if (!walletAddress) {
+        return res.status(400).json({ message: 'walletAddress is required' });
+    }
+
+    try {
+        const ratings = await getContributorRatingsByAddress(walletAddress, limit);
+        res.status(200).json(ratings);
+    } catch (error) {
+        console.error('Error in getContributorRatingsController:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * POST /jobs/contributors/rate
+ * Body: { jobId, requesterAddress, contributorAddress, rating, review }
+ */
+export const createContributorRatingController = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { jobId, requesterAddress, contributorAddress, rating, review } = req.body;
+
+    try {
+        const inserted = await createContributorRating({
+            jobId,
+            requesterAddress,
+            contributorAddress,
+            rating: Number(rating),
+            review: review ?? null,
+        });
+
+        res.status(201).json({ message: 'Contributor rating created', rating: inserted });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ message: 'Rating already exists for this job and requester' });
+        }
+        console.error('Error in createContributorRatingController:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
