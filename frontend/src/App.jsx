@@ -24,7 +24,7 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/meet-team" element={<TeamMembers />} />
-        <Route path="/contributor-pool" element={<ContributorPool />} />
+        <Route path="/contributor-pool" element={<Navigate to="/contributor/pool" replace />} />
 
         {/* Authenticated routes with Sidebar layout */}
         <Route element={<UserProtectWrapper><DashboardLayout /></UserProtectWrapper>}>

@@ -264,19 +264,6 @@ const HomePage = () => {
                                             <ArrowRight className="ml-2" size={18} />
                                         </motion.button>
                                     </Link>
-                                    <Link to="/contributor-pool">
-                                        <motion.button
-                                            whileHover={{ scale: 1.03 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            className={`w-full mt-3 py-3 px-6 rounded-lg flex items-center justify-center border ${isDarkMode
-                                                ? "border-green-500/40 text-green-200 hover:bg-green-900/20"
-                                                : "border-green-500/40 text-green-700 hover:bg-green-50"
-                                                } font-medium transition-colors`}
-                                        >
-                                            View Contributor Pool
-                                            <ArrowRight className="ml-2" size={18} />
-                                        </motion.button>
-                                    </Link>
                                 </div>
                             </motion.div>
                         </div>

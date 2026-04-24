@@ -12,8 +12,8 @@ function CustomDropdown({ label, options, value, setValue }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <div className="mb-4">
-      <label className="block text-xl font-medium text-gray-700 mb-2">
+    <div className="w-full">
+      <label className="block text-base font-medium text-gray-700 mb-2">
         {label}
       </label>
       <motion.div
@@ -24,7 +24,7 @@ function CustomDropdown({ label, options, value, setValue }) {
       >
         {/* Dropdown Button */}
         <div
-          className="flex justify-between items-center w-full px-4 py-4 rounded-t-xl bg-white border border-gray-300 text-gray-700 cursor-pointer shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-400"
+          className="flex justify-between items-center w-full px-4 py-3 rounded-t-xl bg-white border border-gray-200 text-base text-gray-700 cursor-pointer shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-400"
           onClick={() => setDropdownOpen(!dropdownOpen)}
         >
           {value || `Select ${label.toLowerCase()}...`}
@@ -43,7 +43,7 @@ function CustomDropdown({ label, options, value, setValue }) {
             {options.map((option) => (
               <div
                 key={option}
-                className="px-4 py-2 text-gray-700 cursor-pointer hover:bg-gray-100 mx-auto"
+                className="px-4 py-2 text-base text-gray-700 cursor-pointer hover:bg-gray-100 mx-auto"
                 onClick={() => {
                   setValue(option);
                   setDropdownOpen(false);
@@ -233,7 +233,7 @@ export default function ImageClassificationForm() {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-2xl p-8 bg-white shadow-xl rounded-2xl border border-gray-200 transform hover:shadow-2xl transition-all duration-300 z-10"
+      className="w-full p-6 flex flex-col gap-4"
     >
       {/* Custom Dropdown for Model */}
       <CustomDropdown
@@ -243,16 +243,18 @@ export default function ImageClassificationForm() {
         setValue={setModel}
       />
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Epochs
-      </label>
-      <input
-        type="number"
-        value={epochs}
-        onChange={(e) => setEpochs(e.target.value)}
-        placeholder="Number of epochs"
-        className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Epochs
+        </label>
+        <input
+          type="number"
+          value={epochs}
+          onChange={(e) => setEpochs(e.target.value)}
+          placeholder="Number of epochs"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 text-base transition-all duration-300 hover:border-blue-400 appearance-none"
+        />
+      </div>
 
       {/* Custom Dropdown for Image Size */}
       <CustomDropdown
@@ -270,66 +272,76 @@ export default function ImageClassificationForm() {
         setValue={setExportFormat}
       />
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Number of Classes
-      </label>
-      <input
-        type="number"
-        value={numClasses}
-        onChange={(e) => setNumClasses(e.target.value)}
-        placeholder="Enter number of classes"
-        className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Number of Classes
+        </label>
+        <input
+          type="number"
+          value={numClasses}
+          onChange={(e) => setNumClasses(e.target.value)}
+          placeholder="Enter number of classes"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 text-base transition-all duration-300 hover:border-blue-400 appearance-none"
+        />
+      </div>
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Class Names (comma-separated)
-      </label>
-      <input
-        type="text"
-        value={classes}
-        onChange={(e) => setClasses(e.target.value)}
-        placeholder="Enter class names"
-        className="w-full p-4 px-7 border rounded-lg mb-6 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Class Names (comma-separated)
+        </label>
+        <input
+          type="text"
+          value={classes}
+          onChange={(e) => setClasses(e.target.value)}
+          placeholder="Enter class names"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 text-base transition-all duration-300 hover:border-blue-400"
+        />
+      </div>
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Dataset Folder Name
-      </label>
-      <input
-        type="text"
-        value={datasetFolderName}
-        onChange={(e) => setDatasetFolderName(e.target.value)}
-        placeholder="Enter dataset folder name"
-        className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Dataset Folder Name
+        </label>
+        <input
+          type="text"
+          value={datasetFolderName}
+          onChange={(e) => setDatasetFolderName(e.target.value)}
+          placeholder="Enter dataset folder name"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 text-base transition-all duration-300 hover:border-blue-400 appearance-none"
+        />
+      </div>
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Upload Dataset Folder
-      </label>
-      <input
-        type="file"
-        multiple
-        directory=""
-        webkitdirectory=""
-        onChange={handleFileChange}
-        className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Upload Dataset Folder
+        </label>
+        <input
+          type="file"
+          multiple
+          directory=""
+          webkitdirectory=""
+          onChange={handleFileChange}
+          className="w-full text-base text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-200 file:text-gray-800 hover:file:bg-gray-300 cursor-pointer"
+        />
+      </div>
 
-      <label className="block text-xl font-medium text-gray-700 mb-2">
-        Reward Value (POL)
-      </label>
-      <input
-        type="decimal"
-        value={reward}
-        onChange={(e) => setReward(e.target.value)}
-        placeholder="Enter reward value in POL"
-        className="w-full p-4 px-7 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400 text-lg transition-all duration-300 hover:border-blue-400 appearance-none"
-      />
+      <div>
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Reward Value (POL)
+        </label>
+        <input
+          type="decimal"
+          value={reward}
+          onChange={(e) => setReward(e.target.value)}
+          placeholder="Enter reward value in POL"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 text-base transition-all duration-300 hover:border-blue-400 appearance-none"
+        />
+      </div>
 
       <motion.button
         whileHover={!isLoading ? { scale: 1.05 } : {}}
         whileTap={!isLoading ? { scale: 0.95 } : {}}
-        className={`w-full mt-6 py-4 bg-blue-600 text-white text-xl font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-lg ${
+        className={`w-full mt-2 py-3 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-lg ${
           isLoading ? "cursor-not-allowed opacity-70" : "cursor-pointer"
         }`}
         onClick={handleSubmit}

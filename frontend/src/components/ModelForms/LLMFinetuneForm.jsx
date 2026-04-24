@@ -17,14 +17,14 @@ import {
 function CustomDropdown({ label, options, value, setValue }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="w-full">
+      <label className="block text-base font-medium text-gray-700 mb-2">
         {label}
       </label>
       <div
         className="flex justify-between items-center px-4 py-3 bg-white border
           border-gray-200 rounded-xl cursor-pointer shadow-sm hover:border-blue-400
-          transition-colors"
+          transition-colors text-base"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={value ? "text-gray-800" : "text-gray-400"}>
@@ -45,7 +45,7 @@ function CustomDropdown({ label, options, value, setValue }) {
             {options.map((opt) => (
               <div
                 key={opt}
-                className="px-4 py-2 text-gray-700 cursor-pointer hover:bg-blue-50"
+                className="px-4 py-2 text-base text-gray-700 cursor-pointer hover:bg-blue-50"
                 onClick={() => {
                   setValue(opt);
                   setOpen(false);
@@ -261,7 +261,7 @@ export default function LLMFinetuneForm() {
 
         {/* Model name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-700 mb-2">
             HuggingFace Model ID
             {tierLabel && (
               <span
@@ -277,7 +277,7 @@ export default function LLMFinetuneForm() {
             onChange={(e) => setModelName(e.target.value)}
             placeholder="e.g. unsloth/Phi-3.5-mini-instruct"
             required
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base
               focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
@@ -300,7 +300,7 @@ export default function LLMFinetuneForm() {
             { label: "Max Seq Length", value: maxSeqLength, set: setMaxSeqLength, placeholder: "512" },
           ].map(({ label, value, set, placeholder }) => (
             <div key={label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-base font-medium text-gray-700 mb-2">
                 {label}
               </label>
               <input
@@ -310,7 +310,7 @@ export default function LLMFinetuneForm() {
                 onChange={(e) => set(e.target.value)}
                 placeholder={placeholder}
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base
                   focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
@@ -319,7 +319,7 @@ export default function LLMFinetuneForm() {
 
         {/* Reward */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-700 mb-2">
             Reward per Contributor (POL)
           </label>
           <input
@@ -329,7 +329,7 @@ export default function LLMFinetuneForm() {
             value={rewardPerContributor}
             onChange={(e) => setRewardPerContributor(e.target.value)}
             required
-            className={`w-full px-4 py-3 border rounded-xl text-sm focus:outline-none
+            className={`w-full px-4 py-3 border rounded-xl text-base focus:outline-none
               focus:ring-2 focus:ring-blue-300 ${
                 rewardError ? "border-red-400" : "border-gray-200"
               }`}
@@ -355,7 +355,7 @@ export default function LLMFinetuneForm() {
 
         {/* Dataset folder name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-700 mb-2">
             Dataset Folder Name (optional)
           </label>
           <input
@@ -363,14 +363,14 @@ export default function LLMFinetuneForm() {
             value={datasetFolderName}
             onChange={(e) => setDatasetFolderName(e.target.value)}
             placeholder="my-llm-dataset"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base
               focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
 
         {/* File upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-700 mb-2">
             Dataset Files (JSONL / JSON / CSV)
           </label>
           <input
@@ -379,9 +379,9 @@ export default function LLMFinetuneForm() {
             accept=".jsonl,.json,.csv"
             onChange={(e) => setFiles(Array.from(e.target.files))}
             required
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0 file:bg-blue-600 file:text-white
-              hover:file:bg-blue-700 cursor-pointer"
+            className="w-full text-base text-gray-600 file:mr-4 file:py-2 file:px-4
+              file:rounded-lg file:border-0 file:bg-gray-200 file:text-gray-800
+              hover:file:bg-gray-300 cursor-pointer"
           />
           {files.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">

@@ -28,6 +28,7 @@ import logo from '../assets/TrainChain_logo.png';
 const homeSidebarItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/home', tab: null },
   { label: 'Wallet', icon: Wallet, path: '/home', tab: 'wallet' },
+  { label: 'Contributor Pool', icon: Users, path: '/contributor/pool', tab: null },
 ];
 
 const requesterSidebarItems = [
