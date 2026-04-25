@@ -42,7 +42,7 @@ function formatDate(value) {
   });
 }
 
-export default function ContributorPool() {
+export default function ContributorPool({ withNavbar = false }) {
   const [contributors, setContributors] = useState([]);
   const [selectedContributor, setSelectedContributor] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -136,9 +136,11 @@ export default function ContributorPool() {
     return sortOptions.find((option) => option.value === sortBy)?.label ?? 'Sort';
   }, [sortBy]);
 
+  const contentPaddingTop = withNavbar ? 'pt-24' : 'pt-8';
+
   return (
     <div className="min-h-screen bg-transparent text-gray-900 relative overflow-hidden">
-      <div className="pt-8 pb-12 relative z-10">
+      <div className={`${contentPaddingTop} pb-12 relative z-10`}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-10 left-10 w-80 h-80 bg-emerald-200/50 blur-[120px] rounded-full" />
           <div className="absolute top-40 right-12 w-96 h-96 bg-cyan-200/40 blur-[140px] rounded-full" />
@@ -154,9 +156,6 @@ export default function ContributorPool() {
           >
             <div className="grid lg:grid-cols-[1.3fr_0.7fr] gap-0">
               <div className="p-6 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-slate-200/80">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-medium mb-5">
-                  <Users size={16} /> Contributor Pool
-                </div>
                 <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4 text-gray-900">
                   Discover contributors and review their recent work.
                 </h1>

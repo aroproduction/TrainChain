@@ -10,7 +10,7 @@ import Requester from './pages/requester/Requester';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import TeamMembers from './pages/Team';
-import ContributorPool from './pages/ContributorPool';
+import ContributorPoolRoute from './pages/ContributorPoolRoute';
 import Cursor_layout from './Layout/cursor';
 
 const App = () => {
@@ -24,7 +24,8 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/meet-team" element={<TeamMembers />} />
-        <Route path="/contributor-pool" element={<Navigate to="/contributor/pool" replace />} />
+        <Route path="/contributor-pool" element={<ContributorPoolRoute />} />
+        <Route path="/contributor/pool" element={<Navigate to="/contributor-pool" replace />} />
 
         {/* Authenticated routes with Sidebar layout */}
         <Route element={<UserProtectWrapper><DashboardLayout /></UserProtectWrapper>}>
@@ -32,7 +33,6 @@ const App = () => {
           <Route path="/requester" element={<Requester />} />
           <Route path="/my-requests" element={<Navigate to="/requester?tab=my-jobs" replace />} />
           <Route path="/contributor" element={<Contributor />} />
-          <Route path="/contributor/pool" element={<ContributorPool />} />
         </Route>
       </Routes>
     </>

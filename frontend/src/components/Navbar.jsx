@@ -17,7 +17,7 @@ function Navbar() {
 
     function logoutHandler() {
         clearAddress();
-        navigate('/home');
+        navigate('/');
     };
 
 
@@ -31,8 +31,8 @@ function Navbar() {
                 <img src={logo} alt="TrainChain Logo" className='h-12 w-30' />
             </Link>
             <div className="hidden md:flex space-x-6">
-                <Link to="/home" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Home</Link>
-                <Link to="/contributor/pool" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Contributor Pool</Link>
+                <Link to="/" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Home</Link>
+                <Link to="/contributor-pool" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Contributor Pool</Link>
                 <Link to="/about" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">About</Link>
                 <Link to="/contact" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Contact</Link>
                 <Link to="/meet-team" className="text-gray-600 hover:bg-gray-800 hover:text-white transition-colors duration-700 py-2 px-3 rounded-xl">Team</Link>
@@ -45,8 +45,8 @@ function Navbar() {
             {isOpen && (
                 <div className="absolute top-16 right-6 bg-white shadow-lg rounded-md flex flex-col w-48 p-4 space-y-4 md:hidden">
                     {!userAddress && <Link to="/login" className="px-6 py-2 bg-blue-500 text-white rounded-md font-semibold shadow-md hover:bg-blue-600 w-full">Login</Link>}
-                    <Link to="/home" className="px-6 py-2 text-gray-600 hover:text-gray-900">Home</Link>
-                    <Link to="/contributor/pool" className="px-6 py-2 text-gray-600 hover:text-gray-900">Contributor Pool</Link>
+                    <Link to="/" className="px-6 py-2 text-gray-600 hover:text-gray-900">Home</Link>
+                    <Link to="/contributor-pool" className="px-6 py-2 text-gray-600 hover:text-gray-900">Contributor Pool</Link>
                     <Link to="/about" className="px-6 py-2 text-gray-600 hover:text-gray-900">About</Link>
                     <Link to="/contact" className="px-6 py-2 text-gray-600 hover:text-gray-900">Contact</Link>
                     <Link to="/meet-team" className="px-6 py-2 text-gray-600 hover:text-gray-900">Team</Link>

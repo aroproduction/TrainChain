@@ -12,8 +12,6 @@ import {
     Users,
     DollarSign,
     ChevronRight,
-    Sun,
-    Moon,
     ArrowRight,
 } from "lucide-react"
 
@@ -21,18 +19,13 @@ const HomePage = () => {
     const { userAddress } = useContext(UserContext)
     const [searchParams] = useSearchParams()
     const tab = searchParams.get("tab")
-    const [isDarkMode, setIsDarkMode] = useState(false)
+    const isDarkMode = false
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
         const timer = setTimeout(() => setIsVisible(true), 100)
         return () => clearTimeout(timer)
     }, [])
-
-    // Toggle dark mode
-    const toggleDarkMode = () => {
-        setIsDarkMode(!isDarkMode)
-    }
 
     const shortenedAddress = userAddress
         ? `${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`
@@ -363,22 +356,6 @@ const HomePage = () => {
 
 
             </div>
-            {/* Dark Mode Toggle Button repositioned to bottom-right */}
-            <motion.button
-                className={`fixed z-[100] bottom-4 right-4 p-3 rounded-full shadow-lg ${
-                    isDarkMode 
-                        ? "bg-gray-700 hover:bg-gray-600" 
-                        : "bg-gray-200 hover:bg-gray-300"
-                }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleDarkMode}
-            >
-                {isDarkMode ? 
-                    <Sun className="text-yellow-300" size={20} /> : 
-                    <Moon className="text-gray-700" size={20} />
-                }
-            </motion.button>
             <Footer />
         </>
     )

@@ -38,7 +38,7 @@ function ContributorBackground() {
   );
 }
 
-function DashboardLayout() {
+function DashboardLayout({ children }) {
   const location = useLocation();
 
   const isRequester =
@@ -58,7 +58,7 @@ function DashboardLayout() {
         )}
         {/* Page content above background */}
         <div className="relative" style={{ zIndex: 1 }}>
-          <Outlet />
+          {children ?? <Outlet />}
         </div>
       </main>
     </div>

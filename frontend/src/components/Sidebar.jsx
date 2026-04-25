@@ -28,7 +28,7 @@ import logo from '../assets/TrainChain_logo.png';
 const homeSidebarItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/home', tab: null },
   { label: 'Wallet', icon: Wallet, path: '/home', tab: 'wallet' },
-  { label: 'Contributor Pool', icon: Users, path: '/contributor/pool', tab: null },
+  { label: 'Contributor Pool', icon: Users, path: '/contributor-pool', tab: null },
 ];
 
 const requesterSidebarItems = [
@@ -43,7 +43,6 @@ const requesterSidebarItems = [
 const contributorSidebarItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/home', tab: null },
   { label: 'Available Jobs', icon: Search, path: '/contributor', tab: 'available-jobs' },
-  { label: 'Contributor Pool', icon: Users, path: '/contributor/pool', tab: null },
   { label: 'My Contributions', icon: Layers, path: '/contributor', tab: 'my-contributions' },
   { label: 'Earnings', icon: DollarSign, path: '/contributor', tab: 'earnings' },
   { label: 'Wallet', icon: Wallet, path: '/contributor', tab: 'wallet' },
@@ -83,16 +82,19 @@ function Sidebar() {
   const toggleSidebar = useCallback(() => setIsOpen(prev => !prev), []);
 
   const handleLogout = () => {
-    clearAddress();
-    navigate('/');
+    navigate('/', { replace: true });
+    setTimeout(() => clearAddress(), 0);
   };
 
   // Determine which sidebar items to show based on current route
   const getSidebarItems = () => {
+    if (location.pathname === '/contributor-pool') {
+      return homeSidebarItems;
+    }
     if (location.pathname.startsWith('/requester') || location.pathname.startsWith('/my-requests')) {
       return requesterSidebarItems;
     }
-    if (location.pathname.startsWith('/contributor')) {
+    if (location.pathname === '/contributor' || location.pathname.startsWith('/contributor/')) {
       return contributorSidebarItems;
     }
     return homeSidebarItems;
@@ -203,6 +205,16 @@ function Sidebar() {
           )}
         </AnimatePresence>
       </button>
+
+      {!isMobile && !isOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-[60] hidden lg:flex items-center justify-center p-2.5 rounded-xl bg-gray-900/95 backdrop-blur-sm shadow-lg border border-gray-800 hover:bg-black/90 transition-colors"
+          aria-label="Open sidebar"
+        >
+          <Menu size={22} className="text-white" />
+        </button>
+      )}
 
       {/* Mobile backdrop overlay */}
       <AnimatePresence>
@@ -316,22 +328,24 @@ function Sidebar() {
         </div>
 
         {/* Desktop collapse toggle */}
-        <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2">
-          <motion.button
-            onClick={toggleSidebar}
-            className="p-1.5 rounded-full bg-gray-800 border border-gray-700 shadow-lg hover:bg-gray-700 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Collapse sidebar"
-          >
-            <motion.div
-              animate={{ rotate: isOpen ? 0 : 180 }}
-              transition={{ duration: 0.3 }}
+        {isOpen && (
+          <div className="hidden lg:block absolute -right-3 top-6">
+            <motion.button
+              onClick={toggleSidebar}
+              className="p-2 rounded-full bg-gray-900 border border-gray-800 shadow-lg hover:bg-black/90 transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Collapse sidebar"
             >
-              <ChevronLeft size={14} className="text-gray-400" />
-            </motion.div>
-          </motion.button>
-        </div>
+              <motion.div
+                animate={{ rotate: isOpen ? 0 : 180 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronLeft size={16} className="text-white" />
+              </motion.div>
+            </motion.button>
+          </div>
+        )}
       </motion.aside>
 
       {/* Spacer to push content when sidebar is open on desktop */}
