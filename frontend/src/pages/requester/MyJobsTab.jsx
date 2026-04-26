@@ -16,6 +16,7 @@ import {
   Trash2,
   RefreshCw,
   X,
+  Star,
 } from "lucide-react"
 import axios from "axios"
 import { createJob as createJobOnChain, createFederatedJob as createFederatedJobOnChain } from "../../../utils/contract"
@@ -31,6 +32,10 @@ export default function MyJobsTab() {
   const [actionLoading, setActionLoading] = useState(null)
   const [downloadingDataset, setDownloadingDataset] = useState(null)
   const [downloadingModel, setDownloadingModel] = useState(null)
+  const [slotsByJob, setSlotsByJob] = useState({})
+  const [loadingSlotsJobId, setLoadingSlotsJobId] = useState(null)
+  const [ratingFormByJob, setRatingFormByJob] = useState({})
+  const [submittingRatingJobId, setSubmittingRatingJobId] = useState(null)
   const toast = useToast();
 
   useEffect(() => {
@@ -113,6 +118,121 @@ export default function MyJobsTab() {
       toast.error("Failed to download model")
     } finally {
       setDownloadingModel(null);
+    }
+  }
+
+  const ensureRatingForm = (jobId, contributorAddress = "") => {
+    setRatingFormByJob((prev) => {
+      if (prev[jobId]) return prev
+      return {
+        ...prev,
+        [jobId]: {
+          contributorAddress,
+          rating: 5,
+          review: "",
+        },
+      }
+    })
+  }
+
+  const fetchLlmContributors = async (jobId) => {
+    if (slotsByJob[jobId]) {
+      return slotsByJob[jobId]
+    }
+
+    setLoadingSlotsJobId(jobId)
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/jobs/llm/slots/${jobId}`)
+      const rows = Array.isArray(response.data) ? response.data : []
+      const contributors = Array.from(
+        new Set(
+          rows
+            .map((slot) => slot?.contributor_address)
+            .filter(Boolean)
+            .map((addr) => addr.toLowerCase())
+        )
+      )
+      setSlotsByJob((prev) => ({ ...prev, [jobId]: contributors }))
+      return contributors
+    } catch (error) {
+      console.error("Error fetching LLM contributors:", error)
+      toast.error("Failed to load contributors for feedback")
+      setSlotsByJob((prev) => ({ ...prev, [jobId]: [] }))
+      return []
+    } finally {
+      setLoadingSlotsJobId(null)
+    }
+  }
+
+  const handleToggleExpand = async (request) => {
+    const isExpanding = expandedId !== request.id
+    setExpandedId(isExpanding ? request.id : null)
+
+    if (!isExpanding || request.status !== "completed") {
+      return
+    }
+
+    if (request.job_type === "llm_finetune") {
+      const contributors = await fetchLlmContributors(request.id)
+      ensureRatingForm(request.id, contributors[0] || "")
+      return
+    }
+
+    if (request.contributor_address) {
+      ensureRatingForm(request.id, request.contributor_address.toLowerCase())
+    }
+  }
+
+  const updateRatingForm = (jobId, key, value) => {
+    setRatingFormByJob((prev) => ({
+      ...prev,
+      [jobId]: {
+        ...(prev[jobId] || { contributorAddress: "", rating: 5, review: "" }),
+        [key]: value,
+      },
+    }))
+  }
+
+  const handleSubmitFeedback = async (request) => {
+    const form = ratingFormByJob[request.id]
+    const requesterAddress = localStorage.getItem("userAddress")
+
+    if (!requesterAddress) {
+      toast.error("Requester wallet not found. Please log in again.")
+      return
+    }
+
+    if ((request.requester_address || "").toLowerCase() !== requesterAddress.toLowerCase()) {
+      toast.error("Only the requestor can submit feedback for this job")
+      return
+    }
+
+    if (!form?.contributorAddress) {
+      toast.error("Select a contributor before submitting feedback")
+      return
+    }
+
+    setSubmittingRatingJobId(request.id)
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/jobs/contributors/rate`, {
+        jobId: Number(request.id),
+        requesterAddress,
+        contributorAddress: form.contributorAddress,
+        rating: Number(form.rating),
+        review: form.review || "",
+      })
+
+      toast.success("Feedback submitted successfully")
+      updateRatingForm(request.id, "review", "")
+    } catch (error) {
+      if (error?.response?.status === 409) {
+        toast.error("Feedback already submitted for this contributor on this job")
+      } else {
+        console.error("Error submitting feedback:", error)
+        toast.error("Failed to submit feedback")
+      }
+    } finally {
+      setSubmittingRatingJobId(null)
     }
   }
 
@@ -405,9 +525,7 @@ export default function MyJobsTab() {
               >
                 <div
                   className="p-5 cursor-pointer hover:bg-white/60 transition-colors"
-                  onClick={() =>
-                    setExpandedId(expandedId === request.id ? null : request.id)
-                  }
+                  onClick={() => handleToggleExpand(request)}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-4">
@@ -571,6 +689,106 @@ export default function MyJobsTab() {
                             </>
                           )}
                         </div>
+
+                        {request.status === "completed" && (
+                          <div className="mt-5 border-t border-gray-200 pt-4">
+                            <div className="mb-3">
+                              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                                Requestor Feedback
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Submit rating for this completed request.
+                              </p>
+                            </div>
+
+                            {request.job_type === "llm_finetune" && loadingSlotsJobId === request.id ? (
+                              <div className="flex items-center text-sm text-gray-500">
+                                <Loader size={14} className="mr-2 animate-spin" />
+                                Loading contributor slots...
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                                    Contributor
+                                  </label>
+                                  {request.job_type === "llm_finetune" ? (
+                                    <select
+                                      value={ratingFormByJob[request.id]?.contributorAddress || ""}
+                                      onChange={(e) => updateRatingForm(request.id, "contributorAddress", e.target.value)}
+                                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                                    >
+                                      <option value="">Select contributor</option>
+                                      {(slotsByJob[request.id] || []).map((addr) => (
+                                        <option key={addr} value={addr}>
+                                          {addr}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      readOnly
+                                      value={ratingFormByJob[request.id]?.contributorAddress || request.contributor_address || "N/A"}
+                                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                                    />
+                                  )}
+                                </div>
+
+                                <div className="space-y-2">
+                                  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                                    Rating
+                                  </label>
+                                  <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5">
+                                    {[1, 2, 3, 4, 5].map((star) => {
+                                      const selected = star <= (ratingFormByJob[request.id]?.rating || 5)
+                                      return (
+                                        <button
+                                          key={star}
+                                          type="button"
+                                          onClick={() => updateRatingForm(request.id, "rating", star)}
+                                          className={`p-1 rounded ${selected ? "text-amber-500" : "text-gray-300 hover:text-amber-400"}`}
+                                        >
+                                          <Star size={16} fill={selected ? "currentColor" : "none"} />
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+
+                                <div className="md:col-span-2 space-y-2">
+                                  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                                    Feedback (optional)
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={ratingFormByJob[request.id]?.review || ""}
+                                    onChange={(e) => updateRatingForm(request.id, "review", e.target.value)}
+                                    placeholder="Write a short comment about the contribution quality"
+                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none"
+                                  />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                  <button
+                                    type="button"
+                                    disabled={submittingRatingJobId === request.id}
+                                    onClick={() => handleSubmitFeedback(request)}
+                                    className="flex items-center px-4 py-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {submittingRatingJobId === request.id ? (
+                                      <>
+                                        <Loader size={16} className="mr-2 animate-spin" />
+                                        Submitting...
+                                      </>
+                                    ) : (
+                                      "Submit Feedback"
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
