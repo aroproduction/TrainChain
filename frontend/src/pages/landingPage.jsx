@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence, useInView } from "framer-motion"
+import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion"
 import { Link } from "react-router-dom"
 import Navbar from "../components/Navbar"
 
@@ -949,40 +949,16 @@ function CountUp({ value }) {
 }
 
 /** MAIN LANDING PAGE **/
-function LandingPage() {
-  const [scrollY, setScrollY] = useState(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  useEffect(() => {
-    document.documentElement.style.scrollBehavior = 'smooth';
-  }, []);
+function ScrollToTopButton() {
+  const { scrollY } = useScroll()
+  const opacity = useTransform(scrollY, [300, 350], [0, 1])
+  const scale = useTransform(scrollY, [300, 350], [0, 1])
 
   return (
-    <div className="relative bg-gray-200 flex flex-col space-y-6 max-w-screen overflow-x-hidden">
-      <Navbar />
-      <HeroSection />
-      <FeaturesSection />
-      <TestimonialSection />
-      <AboutSection />
-      <ContactSection />
-
-      <motion.div
-        className="fixed bottom-6 right-6 z-50"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{
-          opacity: scrollY > 300 ? 1 : 0,
-          scale: scrollY > 300 ? 1 : 0,
-        }}
-        transition={{ duration: 0.3 }}
-      >
+    <motion.div
+      className="fixed bottom-6 right-6 z-50"
+      style={{ opacity, scale }}
+    >
         <motion.button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
@@ -1000,6 +976,24 @@ function LandingPage() {
           </svg>
         </motion.button>
       </motion.div>
+  )
+}
+
+function LandingPage() {
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+  }, []);
+
+  return (
+    <div className="relative bg-gray-200 flex flex-col space-y-6 max-w-screen overflow-x-hidden">
+      <Navbar />
+      <HeroSection />
+      <FeaturesSection />
+      <TestimonialSection />
+      <AboutSection />
+      <ContactSection />
+
+      <ScrollToTopButton />
 
       <footer className="bg-gray-900 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -1018,11 +1012,6 @@ function LandingPage() {
                 </Link>
               </li>
               <li>
-                <Link to="/features" className="text-gray-400 hover:text-white transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
                 <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
                   About Us
                 </Link>
@@ -1032,29 +1021,24 @@ function LandingPage() {
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link to="/meet-team" className="text-gray-400 hover:text-white transition-colors">
+                  Team
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Resources</h4>
+            <h4 className="text-lg font-semibold mb-4">Platform</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/docs" className="text-gray-400 hover:text-white transition-colors">
-                  Documentation
+                <Link to="/login" className="text-gray-400 hover:text-white transition-colors">
+                  Get Started
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="text-gray-400 hover:text-white transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="text-gray-400 hover:text-white transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="text-gray-400 hover:text-white transition-colors">
-                  Support
+                <Link to="/contributor-pool" className="text-gray-400 hover:text-white transition-colors">
+                  Contributor Pool
                 </Link>
               </li>
             </ul>

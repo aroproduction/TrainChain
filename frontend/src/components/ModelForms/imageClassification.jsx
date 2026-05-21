@@ -202,6 +202,17 @@ export default function ImageClassificationForm() {
             `${import.meta.env.VITE_API_URL}/jobs/confirm/${id}`
           );
           toast.success("Job successfully listed on blockchain!");
+
+          // Reset form fields on success
+          setModel("yolo v11");
+          setEpochs("100");
+          setImgsz("640");
+          setExportFormat("PyTorch(pt)");
+          setNumClasses("");
+          setClasses("");
+          setDatasetFolderName("");
+          setFiles([]);
+          setReward(0);
         }
       } catch (blockchainError) {
         console.error("Blockchain payment failed:", blockchainError);
@@ -215,17 +226,6 @@ export default function ImageClassificationForm() {
     } finally {
       setIsLoading(false);
     }
-
-    // Reset form fields
-    setModel("yolo v11");
-    setEpochs("100");
-    setImgsz("640");
-    setExportFormat("PyTorch(pt)");
-    setNumClasses("");
-    setClasses("");
-    setDatasetFolderName("");
-    setFiles([]);
-    setReward(0);
   };
 
   return (

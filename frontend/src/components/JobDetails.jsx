@@ -16,16 +16,16 @@ import { acceptJob } from "../../utils/contract";
 import LoadingModal from "./LoadingModal";
 
 export default function JobDetails({ selectedJob, onBack }) {
+  const { userAddress } = useContext(UserContext);
+  const toast = useToast();
+  const [isApplying, setIsApplying] = useState(false);
+
   if (!selectedJob)
     return (
       <p className="text-center text-gray-500 mt-20">
         No job selected.
       </p>
     );
-
-  const { userAddress } = useContext(UserContext);
-  const toast = useToast();
-  const [isApplying, setIsApplying] = useState(false);
 
   const isLlmJob = selectedJob.job_type === "llm_finetune";
 

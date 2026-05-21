@@ -21,11 +21,6 @@ const Footer = () => {
               </Link>
             </li>
             <li>
-              <Link to="/features" className="text-gray-400 hover:text-white transition-colors">
-                Features
-              </Link>
-            </li>
-            <li>
               <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
                 About Us
               </Link>
@@ -35,29 +30,24 @@ const Footer = () => {
                 Contact
               </Link>
             </li>
+            <li>
+              <Link to="/meet-team" className="text-gray-400 hover:text-white transition-colors">
+                Team
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <h4 className="text-lg font-semibold mb-4">Resources</h4>
+          <h4 className="text-lg font-semibold mb-4">Platform</h4>
           <ul className="space-y-2">
             <li>
-              <Link to="/docs" className="text-gray-400 hover:text-white transition-colors">
-                Documentation
+              <Link to="/login" className="text-gray-400 hover:text-white transition-colors">
+                Get Started
               </Link>
             </li>
             <li>
-              <Link to="/blog" className="text-gray-400 hover:text-white transition-colors">
-                Blog
-              </Link>
-            </li>
-            <li>
-              <Link to="/faq" className="text-gray-400 hover:text-white transition-colors">
-                FAQ
-              </Link>
-            </li>
-            <li>
-              <Link to="/support" className="text-gray-400 hover:text-white transition-colors">
-                Support
+              <Link to="/contributor-pool" className="text-gray-400 hover:text-white transition-colors">
+                Contributor Pool
               </Link>
             </li>
           </ul>

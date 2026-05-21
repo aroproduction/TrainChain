@@ -81,7 +81,7 @@ const Toast = ({ id, type = "info", message, onClose, duration = 5000 }) => {
       />
       
       {/* Main toast card */}
-      <div className={`relative bg-gradient-to-br ${bgGradient} backdrop-blur-xl border-2 border-white/50 rounded-3xl p-6 shadow-2xl ${shadowColor} min-w-[400px] max-w-[500px]`}>
+      <div className={`relative bg-gradient-to-br ${bgGradient} backdrop-blur-xl border-2 border-white/50 rounded-3xl p-6 shadow-2xl ${shadowColor} w-[calc(100vw-3rem)] max-w-[500px] sm:min-w-[400px]`}>
         {/* Top gradient accent */}
         {/* <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${gradient} rounded-t-3xl`} /> */}
         

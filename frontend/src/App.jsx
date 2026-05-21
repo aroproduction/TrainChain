@@ -11,6 +11,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import TeamMembers from './pages/Team';
 import ContributorPoolRoute from './pages/ContributorPoolRoute';
+import NotFound from './pages/NotFound';
 import Cursor_layout from './Layout/cursor';
 
 const App = () => {
@@ -34,6 +35,9 @@ const App = () => {
           <Route path="/my-requests" element={<Navigate to="/requester?tab=my-jobs" replace />} />
           <Route path="/contributor" element={<Contributor />} />
         </Route>
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   )
