@@ -131,6 +131,7 @@ _LLM_PACKAGES = [
     "accelerate",
     "safetensors",
     "sentencepiece",
+    "tiktoken"
 ]
 
 

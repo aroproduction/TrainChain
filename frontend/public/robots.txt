@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /home
+Disallow: /requester
+Disallow: /contributor
+
+Sitemap: https://train-chain.vercel.app/sitemap.xml

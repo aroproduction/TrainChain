@@ -44,7 +44,7 @@ _VRAM_REQUIREMENTS: dict[str, float] = {
 _DEFAULT_VRAM_REQ = 4.0
 
 # Minimum system requirements (hard errors if below)
-_MIN_RAM_GB  = 8.0
+_MIN_RAM_GB  = 6.0
 _MIN_DISK_GB = 10.0
 
 
